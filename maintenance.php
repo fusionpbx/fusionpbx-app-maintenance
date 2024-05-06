@@ -118,5 +118,5 @@ require_once dirname(__DIR__, 2) . '/resources/header.php';
 	echo "</form>";
 echo "</div>";
 
-<?php
+
 require_once dirname(__DIR__, 2) . '/resources/footer.php';
