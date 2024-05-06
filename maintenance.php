@@ -60,33 +60,33 @@ $difference = array_diff($maintenance_classes, $default_settings_classes);
 //show the content
 $document['title'] = $text['title-maintenance'];
 require_once dirname(__DIR__, 2) . '/resources/header.php';
-?>
 
-<div class='action_bar' id='action_bar'>
-	<div class='heading'><b>Maintenance (<?= count($maintenance_classes) ?>)</b></div>
-	<div class='actions'>
-		<form action="maintenance_logs.php">
-			<button>Logs</button>
-		</form>
-		<form>
-			<button>Register</button>
-			<span><input id='search' type='text'/></span>
-			<button>Search</button>
-		</form>
-	</div>
-	<br/><br/>
-	<form id='form_list'>
-		<table class='list'>
-			<tr class='list-header'>
-				<th class='checkbox'><input type='checkbox'/></th>
-				<th>Name</th>
-				<th>Registered</th>
-				<th>Database Enabled</th>
-				<th>Retention Days</th>
-				<th>File System Enabled</th>
-				<th>Retention Days</th>
-			</tr>
-			<?php foreach ($maintenance_classes as $x => $class) {
+
+	echo "<div class='action_bar' id='action_bar'>";
+	echo "<div class='heading'><b>Maintenance (<?= count($maintenance_classes) ?>)</b></div>";
+	echo "<div class='actions'>";
+		echo "<form action='maintenance_logs.php'>";
+			echo "<button>Logs</button>";
+		echo "</form>";
+		echo "<form>";
+			echo "<button>Register</button>";
+			echo "<span><input id='search' type='text'/></span>";
+			echo "<button>Search</button>";
+		echo "</form>";
+	echo "</div>";
+	echo "<br/><br/>";
+	echo "<form id='form_list'>";
+		echo "<table class='list'>";
+			echo "<tr class='list-header'>";
+				echo "<th class='checkbox'><input type='checkbox'/></th>";
+				echo "<th>Name</th>";
+				echo "<th>Registered</th>";
+				echo "<th>Database Enabled</th>";
+				echo "<th>Retention Days</th>";
+				echo "<th>File System Enabled</th>";
+				echo "<th>Retention Days</th>";
+			echo "</tr>";
+			foreach ($maintenance_classes as $x => $class) {
 				$obj = new $class;
 				$installed = array_search($class, $difference) ? 'No' : 'Yes';
 				if ($obj instanceof database_maintenance) {
@@ -103,20 +103,20 @@ require_once dirname(__DIR__, 2) . '/resources/header.php';
 					$filesystem_maintenance_enabled = "";
 					$filesystem_maintenance_retention = "";
 				}
-			?>
-			<tr class='list-row' style="">
-				<td class='center'><input type='checkbox' id='<?=$class?>'/></td>
-				<td><?=$class?></td>
-				<td <?=$installed=='No' ? 'style=" background-color: var(--warning);"' : 'style=" background-color: none;"'?>><?=$installed?></td>
-				<td><?=$database_maintenance_enabled?></td>
-				<td><?=$database_maintenance_retention?></td>
-				<td><?=$filesystem_maintenance_enabled?></td>
-				<td><?=$filesystem_maintenance_retention?></td>
-			</tr>
-			<?php } ?>
-		</table>
-	</form>
-</div>
+
+			echo "<tr class='list-row' style=''>";
+				echo "<td class='center'><input type='checkbox' id='$class'/></td>";
+				echo "<td>$class</td>";
+				echo "<td ". ($installed=='No' ? "style=' background-color: var(--warning);'" : 'style=" background-color: none;"') .">$installed</td>";
+				echo "<td>$database_maintenance_enabled</td>";
+				echo "<td>$database_maintenance_retention</td>";
+				echo "<td>$filesystem_maintenance_enabled</td>";
+				echo "<td>$filesystem_maintenance_retention</td>";
+			echo "</tr>";
+			}
+		echo "</table>";
+	echo "</form>";
+echo "</div>";
 
 <?php
 require_once dirname(__DIR__, 2) . '/resources/footer.php';
