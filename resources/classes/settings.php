@@ -22,7 +22,11 @@ class settings {
 	public function __construct($setting_array = []) {
 
 		//open a database connection
-		$this->database = database::new();
+		if (isset($setting_array['database'])) {
+			$this->database = $setting_array['database'];
+		} else {
+			$this->database = database::new();
+		}
 
 		//set the values from the array
 		$this->domain_uuid = $setting_array['domain_uuid'] ?? null;
@@ -30,7 +34,7 @@ class settings {
 		$this->device_uuid = $setting_array['device_uuid'] ?? null;
 		$this->device_profile_uuid = $setting_array['device_profile_uuid'] ?? null;
 		$this->category = $setting_array['category'] ?? null;
-
+		$this->reload();
 	}
 
 	public function reload(): void {
