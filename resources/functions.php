@@ -1,5 +1,16 @@
 <?php
 
+	if (!function_exists('has_trait')) {
+		function has_trait($object_or_class, $trait): bool {
+			if (trait_exists($trait) && in_array($trait, class_uses($object_or_class))) {
+				//class has the trait
+				return true;
+			}
+			//class does not have the trait
+			return false;
+		}
+	}
+
 	if (!function_exists('has_interface')) {
 		/**
 		 * Returns true when the class has implemented the interface
