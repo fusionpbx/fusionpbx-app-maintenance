@@ -219,13 +219,12 @@ class maintenance_service extends service {
 	 * @return void
 	 */
 	protected function database_maintenance(): void {
+		//go through the list of registered apps in default settings
 		foreach ($this->maintenance_apps as $class_name) {
-			$worker = null;
-			if (class_exists($class_name)) {
-				$worker = new $class_name();
-			}
-			if ($worker instanceof database_maintenance) {
-				$worker->database_maintenance($this->database, $this->settings);
+			//check the class implements database_maintenance
+			if (has_interface($class_name, 'database_maintenance')) {
+				//call the method statically so it does not invoke the constructor
+				$class_name::database_maintenance($this->database, $this->settings);
 			}
 		}
 	}
@@ -235,13 +234,12 @@ class maintenance_service extends service {
 	 * @return void
 	 */
 	protected function filesystem_maintenance(): void {
+		//go through the list of registered apps in default settings
 		foreach ($this->maintenance_apps as $class_name) {
-			$worker = null;
-			if (class_exists($class_name)) {
-				$worker = new $class_name();
-			}
-			if ($worker instanceof filesystem_maintenance) {
-				$worker->filesystem_maintenance($this->database, $this->settings);
+			//check the class implements filesystem_maintenance
+			if (has_interface($class_name, 'filesystem_maintenance')) {
+				//call the method statically so it does not invoke the constructor
+				$class_name::filesystem_maintenance($this->database, $this->settings);
 			}
 		}
 	}
@@ -386,20 +384,14 @@ class maintenance_service extends service {
 	/**
 	 * Saves the logs in an array in order to write them all at once. This is to remove the number of times the database will try to
 	 * be written to during the many worker processes to improve performance similar to an atomic commit.
-	 * @param database_maintenance|filesystem_maintenance $worker
+	 * @param database_maintenance|filesystem_maintenance|string $worker
 	 * @param string $message
 	 */
 	public static function log_write($worker, string $message, string $status = self::LOG_OK) {
+		require_once dirname(__DIR__) . '/functions.php';
+		$classname = get_classname($worker);
 		//protect against hijacking the log writer from a non maintenance worker
-		if (self::$logs !== null && ($worker instanceof database_maintenance || $worker instanceof filesystem_maintenance)) {
-			//automatic retrieval of class name based on PHP version
-			if (version_compare(PHP_VERSION, "8.0.0", "<")) {
-				$backtrace = debug_backtrace();
-				$classname = !empty($backtrace[1]['class']) ? $backtrace[1]['class'] : 'object';
-			} else {
-				// PHP 8.0 and higher can extract the class from a dynamic name
-				$classname = $worker::class;
-			}
+		if (self::$logs !== null && (has_interface($classname, 'database_maintenance') || has_interface($classname, 'filesystem_maintenance'))) {
 			$row_index = count(self::$logs);
 			self::$logs[$row_index]['maintenance_log_uuid']   = uuid();
 			self::$logs[$row_index]['maintenance_log_application'] = $classname;
