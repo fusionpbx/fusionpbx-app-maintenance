@@ -40,10 +40,10 @@ trait filesystem_maintenance {
 	public static $filesystem_retention_default_value = '30';
 
 	//class must implement this method
-	abstract public static function filesystem_maintenance_files(string $domain_uuid, string $domain_name, string $retention_days): array;
+	abstract public static function filesystem_maintenance_files(settings $settings, string $domain_uuid, string $domain_name, string $retention_days): array;
 
 	/**
-	 * A generic file remover
+	 * Removes old files on a per-domain basis
 	 * @param database $database
 	 * @param settings $settings
 	 * @return void
@@ -56,8 +56,11 @@ trait filesystem_maintenance {
 			$domains = maintenance_service::get_domains($database);
 			//loop over domains
 			foreach ($domains as $domain_uuid => $domain_name) {
+				//assign the settings object
+				$domain_settings = new settings(['database' => $database, 'domain_uuid' => $domain_uuid]);
+				$files = self::filesystem_maintenance_files($domain_settings, $domain_uuid, $domain_name, $days);
 				//loop over each file in the domain
-				foreach (self::filesystem_maintenance_files($domain_uuid, $domain_name, $days) as $file) {
+				foreach ($files as $file) {
 					//check if it is old enough
 					if (maintenance_service::days_since_created($file) > $days) {
 						if (unlink($file)) {

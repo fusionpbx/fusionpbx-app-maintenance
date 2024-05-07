@@ -222,7 +222,7 @@ class maintenance_service extends service {
 		//go through the list of registered apps in default settings
 		foreach ($this->maintenance_apps as $class_name) {
 			//check the class implements database_maintenance
-			if (has_interface($class_name, 'database_maintenance')) {
+			if (has_trait($class_name, 'database_maintenance')) {
 				//call the method statically so it does not invoke the constructor
 				$class_name::database_maintenance($this->database, $this->settings);
 			}
@@ -237,7 +237,7 @@ class maintenance_service extends service {
 		//go through the list of registered apps in default settings
 		foreach ($this->maintenance_apps as $class_name) {
 			//check the class implements filesystem_maintenance
-			if (has_interface($class_name, 'filesystem_maintenance')) {
+			if (has_trait($class_name, 'filesystem_maintenance')) {
 				//call the method statically so it does not invoke the constructor
 				$class_name::filesystem_maintenance($this->database, $this->settings);
 			}
@@ -391,14 +391,19 @@ class maintenance_service extends service {
 		require_once dirname(__DIR__) . '/functions.php';
 		$classname = get_classname($worker_or_classname);
 		//protect against hijacking the log writer from a non maintenance worker
-		if (self::$logs !== null && (has_interface($classname, 'database_maintenance') || has_interface($classname, 'filesystem_maintenance'))) {
+		if (self::$logs !== null && (has_trait($classname, 'database_maintenance') || has_trait($classname, 'filesystem_maintenance'))) {
 			$row_index = count(self::$logs);
+			self::$logs[$row_index]['domain_uuid'] = $domain_uuid;
 			self::$logs[$row_index]['maintenance_log_uuid'] = uuid();
-			self::$logs[$row_index]['maintenance_log_domain_uuid'] = $domain_uuid;
 			self::$logs[$row_index]['maintenance_log_application'] = $classname;
 			self::$logs[$row_index]['maintenance_log_epoch'] = time();
 			self::$logs[$row_index]['maintenance_log_message'] = $message;
 			self::$logs[$row_index]['maintenance_log_status'] = $status;
+
+			//only allow up to 100 entries before flushing
+			if (count(self::$logs) > 100) {
+				self::log_flush();
+			}
 		}
 	}
 
