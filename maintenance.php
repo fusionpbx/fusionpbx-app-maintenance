@@ -30,6 +30,7 @@ Tim Fry <tim.fry@hotmail.com>
 require_once dirname(__DIR__, 2) . '/resources/require.php';
 require_once "resources/check_auth.php";
 require_once "resources/paging.php";
+require_once __DIR__ . '/resources/functions.php';
 
 if (permission_exists('maintenance_view')) {
 	// permission granted

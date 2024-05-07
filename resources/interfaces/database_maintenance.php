@@ -30,9 +30,35 @@
  *
  * @author Tim Fry <tim.fry@hotmail.com>
  */
-interface database_maintenance {
-	public function database_maintenance(database $database, settings $settings): void;
-	public function database_retention_category(): string;
-	public function database_retention_subcategory(): string;
-	public function database_retention_default_value(): string;
+trait database_maintenance {
+	//
+	//override the values in the class that is using the trait or leave as default
+	//
+	public static $database_maintenance_application = self::class;
+	public static $database_retention_category = self::class;
+	public static $database_retention_subcategory = 'database_retention_days';
+	public static $database_retention_default_value = '30';
+
+	//class must implement this method
+	abstract public static function database_maintenance_sql(string $domain_uuid, string $retention_days): string;
+
+	public static function database_maintenance(database $database, settings $settings): void {
+		//get retention days
+		$days = $settings->get(self::$database_retention_category, self::$database_retention_subcategory, '');
+		//look for old entries
+		if (!empty($days) && is_numeric($days)) {
+			$domains = maintenance_service::get_domains($database);
+			foreach ($domains as $domain_uuid => $domain_name) {
+				$database->execute(self::get_database_maintenance_sql_statement($domain_uuid, $domain_name, $days));
+				if ($database->message['code'] === '200') {
+					maintenance_service::log_write(self::$database_maintenance_application, "Removed maintenance log entries older than $days days for domain $domain_name.");
+				} else {
+					maintenance_service::log_write(self::$database_maintenance_application, "Failed to clear entries", $domain_uuid, maintenance_service::LOG_ERROR);
+				}
+			}
+		} else {
+			//database retention not set or not a valid number
+			maintenance_service::log_write(self::$database_maintenance_application, 'Retention days not set', '', maintenance_service::LOG_ERROR);
+		}
+	}
 }

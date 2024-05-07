@@ -98,10 +98,10 @@ class maintenance_service extends service {
 	protected static function set_cli_options() {
 		//add a new command line option
 		self::append_cli_option(cli_option::new()
-			->short_option('i')
-			->long_option('immediate')
-			->description('Launch maintenance services immediately on startup')
-			->functions(['set_immediate'])
+				->short_option('i')
+				->long_option('immediate')
+				->description('Launch maintenance services immediately on startup')
+				->functions(['set_immediate'])
 		);
 	}
 
@@ -190,7 +190,7 @@ class maintenance_service extends service {
 		}
 
 		//main loop
-		while($this->running) {
+		while ($this->running) {
 			//wait until the time matches requested time of day
 			do {
 				$now = date('H:i');
@@ -384,21 +384,43 @@ class maintenance_service extends service {
 	/**
 	 * Saves the logs in an array in order to write them all at once. This is to remove the number of times the database will try to
 	 * be written to during the many worker processes to improve performance similar to an atomic commit.
-	 * @param database_maintenance|filesystem_maintenance|string $worker
+	 * @param database_maintenance|filesystem_maintenance|string $worker_or_classname
 	 * @param string $message
 	 */
-	public static function log_write($worker, string $message, string $status = self::LOG_OK) {
+	public static function log_write($worker_or_classname, string $message, string $domain_uuid = '', string $status = self::LOG_OK) {
 		require_once dirname(__DIR__) . '/functions.php';
-		$classname = get_classname($worker);
+		$classname = get_classname($worker_or_classname);
 		//protect against hijacking the log writer from a non maintenance worker
 		if (self::$logs !== null && (has_interface($classname, 'database_maintenance') || has_interface($classname, 'filesystem_maintenance'))) {
 			$row_index = count(self::$logs);
-			self::$logs[$row_index]['maintenance_log_uuid']   = uuid();
+			self::$logs[$row_index]['maintenance_log_uuid'] = uuid();
+			self::$logs[$row_index]['maintenance_log_domain_uuid'] = $domain_uuid;
 			self::$logs[$row_index]['maintenance_log_application'] = $classname;
 			self::$logs[$row_index]['maintenance_log_epoch'] = time();
 			self::$logs[$row_index]['maintenance_log_message'] = $message;
 			self::$logs[$row_index]['maintenance_log_status'] = $status;
 		}
+	}
+
+	/**
+	 * Returns a list of domains with the domain_uuid as the key and the domain_name as the value
+	 * @param database $database
+	 * @return array Domain uuid as key and domain name as value
+	 */
+	public static function get_domains(database $database): array {
+		$domain = new domains();
+		$domain->all();
+		$domains = [];
+		$sql = "select domain_uuid, domain_name"
+			. " from v_domains"
+		;
+		$records = $database->select($sql);
+		if (!empty($records)) {
+			foreach($records as $row) {
+				$domains[$row['domain_uuid']] = $row['domain_name'];
+			}
+		}
+		return $domains;
 	}
 
 	/**
@@ -471,5 +493,4 @@ class maintenance_service extends service {
 	public static function years_since_created(string $file): int {
 		return floor(self::weeks_since_created($file) / 52);
 	}
-
 }

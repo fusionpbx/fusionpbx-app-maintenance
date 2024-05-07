@@ -141,14 +141,14 @@
 
 //get the list
 	$sql = "select"
-		. "  maintenance_log_uuid"
-		. "  ,maintenance_log_application"
-		. "  ,to_timestamp(maintenance_log_epoch)::timestamptz as maintenance_log_epoch"
-//		. "  ,maintenance_log_epoch"
-		. "  ,maintenance_log_message"
-		. "  ,maintenance_log_status"
+		. " maintenance_log_uuid"
+		. ", domain_uuid"
+		. ", maintenance_log_application"
+		. ", to_timestamp(maintenance_log_epoch)::timestamptz as maintenance_log_epoch"
+		. ", maintenance_log_message"
+		. ", maintenance_log_status"
 		. " from"
-		. "  v_maintenance_logs"
+		. " v_maintenance_logs"
 	;
 //	if (isset($search)) {
 //		$sql .= "and ( \n";
@@ -201,12 +201,6 @@
 	echo "	<div style='clear: both;'></div>\n";
 	echo "</div>\n";
 
-	if (permission_exists('maintenance_log_add') && $maintenance_logs) {
-		echo modal::create(['id'=>'modal-copy','type'=>'copy','actions'=>button::create(['type'=>'button','label'=>$text['button-continue'],'icon'=>'check','id'=>'btn_copy','style'=>'float: right; margin-left: 15px;','collapse'=>'never','onclick'=>"modal_close(); list_action_set('copy'); list_form_submit('form_list');"])]);
-	}
-	if (permission_exists('maintenance_log_edit') && $maintenance_logs) {
-		echo modal::create(['id'=>'modal-toggle','type'=>'toggle','actions'=>button::create(['type'=>'button','label'=>$text['button-continue'],'icon'=>'check','id'=>'btn_toggle','style'=>'float: right; margin-left: 15px;','collapse'=>'never','onclick'=>"modal_close(); list_action_set('toggle'); list_form_submit('form_list');"])]);
-	}
 	if (permission_exists('maintenance_log_delete') && $maintenance_logs) {
 		echo modal::create(['id'=>'modal-delete','type'=>'delete','actions'=>button::create(['type'=>'button','label'=>$text['button-continue'],'icon'=>'check','id'=>'btn_delete','style'=>'float: right; margin-left: 15px;','collapse'=>'never','onclick'=>"modal_close(); list_action_set('delete'); list_form_submit('form_list');"])]);
 	}
@@ -220,14 +214,15 @@
 
 	echo "<table class='list'>\n";
 	echo "<tr class='list-header'>\n";
-//	if (permission_exists('maintenance_log_delete')) {
+	if (permission_exists('maintenance_log_delete')) {
 		echo "	<th class='checkbox'>\n";
 		echo "		<input type='checkbox' id='checkbox_all' name='checkbox_all' onclick='list_all_toggle();' ".($maintenance_logs ?: "style='visibility: hidden;'").">\n";
 		echo "	</th>\n";
-//	}
+	}
 	if ($show == 'all' && permission_exists('maintenance_log_all')) {
 		echo th_order_by('domain_name', $text['label-domain'], $order_by, $order);
 	}
+	echo "<th class='left'>".$text['label-domain']."</th>\n";
 	echo "<th class='left'>".$text['label-application']."</th>\n";
 	echo "<th class='left'>".$text['label-server_timestamp']."</th>\n";
 	echo "<th class='left'>".$text['label-status']."</th>\n";
@@ -238,19 +233,22 @@
 	echo "</tr>\n";
 
 	if (is_array($maintenance_logs) && @sizeof($maintenance_logs) != 0) {
+		$domains = maintenance_service::get_domains($database);
 		$x = 0;
 		foreach ($maintenance_logs as $row) {
+			$application_name = ucwords(str_replace('_', ' ', $row['maintenance_log_application']));
+			$domain_name = $domains[$row['domain_uuid']] ?: 'Global';
 			if (permission_exists('maintenance_log_edit')) {
 				$list_row_url = "maintenance_log_edit.php?id=".urlencode($row['maintenance_log_uuid']);
 			}
 			echo "<tr class='list-row' href='".$list_row_url."'>\n";
-//			if (permission_exists('maintenance_log_delete')) {
+			if (permission_exists('maintenance_log_delete')) {
 				echo "	<td class='checkbox'>\n";
 				echo "		<input type='checkbox' name='maintenance_logs[$x][checked]' id='checkbox_".$x."' value='true' onclick=\"if (!this.checked) { document.getElementById('checkbox_all').checked = false; }\">\n";
 				echo "		<input type='hidden' name='maintenance_logs[$x][uuid]' value='".escape($row['maintenance_log_uuid'])."' />\n";
 				echo "	</td>\n";
-//			}
-			$application_name = ucwords(str_replace('_', ' ', $row['maintenance_log_application']));
+			}
+			echo "	<td class='left'>$domain_name</td>\n";
 			echo "	<td class='left'>".escape($application_name)."</td>\n";
 			echo "	<td class='left'>".escape($row['maintenance_log_epoch'])."</td>\n";
 			echo "	<td class='left'>".escape($row['maintenance_log_status'])."</td>\n";

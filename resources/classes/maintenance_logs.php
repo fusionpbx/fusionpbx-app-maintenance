@@ -31,34 +31,212 @@
  *
  * @author Tim Fry <tim.fry@hotmail.com>
  */
-class maintenance_logs implements database_maintenance {
+class maintenance_logs {
 
-	public function database_maintenance(database $database, settings $settings): void {
-		//get retention days
-		$days = $settings->get($this->database_retention_category(), $this->database_retention_subcategory(), '');
-		//look for old entries
-		if (!empty($days)) {
-			$sql = "delete from v_maintenance_logs where insert_date < NOW() - INTERVAL '$days days'";
-			$database->execute($sql);
-			if ($database->message['code'] === '200') {
-				maintenance_service::log_write($this, "Removed maintenance log entries older than $days days.");
-			} else {
-				maintenance_service::log_write($this, "Failed to clear entries", maintenance_service::LOG_ERROR);
-			}
+	use database_maintenance;
+
+	const APP_NAME = 'maintenance_logs';
+	const APP_UUID = '5be7b4c2-1a4f-4236-b91a-60e3c33904d7';
+	const PERMISSION_PREFIX = 'maintenance_log_';
+	const LIST_PAGE = 'maintenance_logs.php';
+	const TABLE = 'maintenance_logs';
+	const UUID_PREFIX = 'maintenance_log_';
+	const TOGGLE_FIELD = 'maintenance_log_enable';
+	const TOGGLE_VALUES = ['true', 'false'];
+
+	private $database;
+	private $settings;
+	private $domain_uuid;
+	private $user_uuid;
+
+	public function __construct(database $database, settings $settings) {
+		if ($database !== null) {
+			$this->database = $database;
 		} else {
-			maintenance_service::log_write($this, 'Retention days not set', maintenance_service::LOG_ERROR);
+			$this->database = new $database;
+		}
+
+		$this->domain_uuid = $_SESSION['domain_uuid'] ?? '';
+		$this->user_uuid = $_SESSION['user_uuid'] ?? '';
+
+		if ($settings !== null) {
+			$this->settings = $settings;
+		} else {
+			$this->settings = new settings([
+				'database' => $database
+				, 'domain_uuid' => $this->domain_uuid
+				, 'user_uuid' => $this->user_uuid
+			]);
+		}
+
+		$database->app_name = self::APP_NAME;
+		$database->app_uuid = self::APP_UUID;
+	}
+
+	public static function database_maintenance_sql(string $domain_uuid, string $retention_days): string {
+		return "delete from v_maintenance_logs"
+			. " where insert_date < NOW() - INTERVAL '$retention_days days'"
+			. " and (domain_uuid = '$domain_uuid' or domain_uuid is null)"
+		;
+	}
+
+	/**
+	 * delete records
+	 */
+	public function delete(array $records) {
+		//add multi-lingual support
+		$language = new text;
+		$text = $language->get();
+
+		if (!permission_exists(self::PERMISSION_PREFIX . 'delete') || empty($records)) {
+			message::add($text['message-no_records'], 'negative');
+			header('Location: ' . self::LIST_PAGE);
+			exit;
+		}
+
+		//validate the token
+		$token = new token;
+		if (!$token->validate($_SERVER['PHP_SELF'])) {
+			message::add($text['message-invalid_token'], 'negative');
+			header('Location: ' . self::LIST_PAGE);
+			exit;
+		}
+
+		//delete multiple records by building an array of records to remove
+		$remove_array = [];
+		foreach ($records as $x => $record) {
+			if (!empty($record['checked']) && $record['checked'] == 'true' && is_uuid($record['uuid'])) {
+				$remove_array[self::TABLE][$x][self::UUID_PREFIX . 'uuid'] = $record['uuid'];
+				$remove_array[self::TABLE][$x]['domain_uuid'] = $this->domain_uuid;
+			}
+		}
+
+		//delete the checked rows
+		if (!empty($remove_array)) {
+			//execute delete
+			$this->database->delete($remove_array);
+			//set message
+			message::add($text['message-delete']);
 		}
 	}
 
-	public function database_retention_category(): string {
-		return 'maintenance';
+	/**
+	 * toggle records
+	 */
+	public function toggle(array $records) {
+		//add multi-lingual support
+		$language = new text;
+		$text = $language->get();
+
+		//check that we have something to do
+		if (empty($records) || !permission_exists(self::PERMISSION_PREFIX . 'edit')) {
+			message::add($text['message-no_records'], 'negative');
+			header('Location: ' . self::LIST_PAGE);
+			return;
+		}
+
+		//validate the token
+		$token = new token;
+		if (!$token->validate($_SERVER['PHP_SELF'])) {
+			message::add($text['message-invalid_token'], 'negative');
+			header('Location: ' . self::LIST_PAGE);
+			exit;
+		}
+
+		//toggle the checked records to get current toggle state
+		$uuids = [];
+		foreach ($records as $x => $record) {
+			if (!empty($record['checked']) && $record['checked'] == 'true' && is_uuid($record['uuid'])) {
+				$uuids[] = "'" . $record['uuid'] . "'";
+			}
+		}
+		if (!empty($uuids)) {
+			$sql = "select " . self::UUID_PREFIX . "uuid as uuid, " . self::TOGGLE_FIELD . " as toggle from v_" . self::TABLE . " ";
+			$sql .= "where (domain_uuid = :domain_uuid or domain_uuid is null) ";
+			$sql .= "and " . self::UUID_PREFIX . "uuid in (" . implode(', ', $uuids) . ") ";
+			$parameters['domain_uuid'] = $this->domain_uuid;
+
+			$rows = $this->database->select($sql, $parameters, 'all');
+			if (!empty($rows)) {
+				$states = [];
+				foreach ($rows as $row) {
+					$states[$row['uuid']] = $row['toggle'];
+				}
+			}
+		}
+
+		//build update array
+		$x = 0;
+		$array = [];
+		foreach ($states as $uuid => $state) {
+			$array[self::TABLE][$x][self::UUID_PREFIX . 'uuid'] = $uuid;
+			$array[self::TABLE][$x][self::TOGGLE_FIELD] = $state == self::TOGGLE_VALUES[0] ? self::TOGGLE_VALUES[1] : self::TOGGLE_VALUES[0];
+			$x++;
+		}
+
+		//save the changes
+		if (!empty($array)) {
+
+			//save the array
+			$database->app_name = self::APP_NAME;
+			$database->app_uuid = self::APP_UUID;
+			$this->database->save($array);
+
+			//set message
+			message::add($text['message-toggle']);
+		}
 	}
 
-	public function database_retention_subcategory(): string {
-		return 'database_retention_days';
-	}
+	/**
+	 * copy records
+	 */
+	public function copy(array $records) {
+		//check that we have something to do
+		if (empty($records) || !permission_exists(self::PERMISSION_PREFIX . 'add')) {
+			return;
+		}
+		//add multi-lingual support
+		$language = new text;
+		$text = $language->get();
 
-	public function database_retention_default_value(): string {
-		return '30';
+		//validate the token
+		$token = new token;
+		if (!$token->validate($_SERVER['PHP_SELF'])) {
+			message::add($text['message-invalid_token'], 'negative');
+			header('Location: ' . self::LIST_PAGE);
+			exit;
+		}
+
+
+		//get checked records
+		$uuids = [];
+		foreach ($records as $record) {
+			if (!empty($record['checked']) && $record['checked'] == 'true' && is_uuid($record['uuid'])) {
+				$uuids[] = "'" . $record['uuid'] . "'";
+			}
+		}
+
+		//create insert array from existing data
+		if (!empty($uuids)) {
+			$sql = "select * from v_" . self::TABLE
+				. " where (domain_uuid = :domain_uuid or domain_uuid is null)"
+				. " and " . self::UUID_PREFIX . "uuid in (" . implode(', ', $uuids) . ")";
+			$parameters['domain_uuid'] = $this->domain_uuid;
+			$rows = $this->database->select($sql, $parameters, 'all');
+			if (!empty($rows)) {
+				$array = [];
+				foreach ($rows as $x => $row) {
+					//copy data
+					$array[self::TABLE][$x] = $row;
+					//overwrite
+					$array[self::TABLE][$x][self::UUID_PREFIX . 'uuid'] = uuid();
+					$array[self::TABLE][$x]['bridge_description'] = trim($row['bridge_description'] . ' (' . $text['label-copy'] . ')');
+				}
+				$this->database->save($array);
+			}
+
+			//set message
+			message::add($text['message-copy']);
+		}
 	}
 }
