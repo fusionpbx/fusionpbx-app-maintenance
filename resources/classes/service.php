@@ -718,6 +718,7 @@ abstract class service {
 			require_once __DIR__ . '/settings.php';
 		}
 
+		//TODO remove global functions after merge
 		if (file_exists(dirname(__DIR__).'/functions.php')) {
 			require_once dirname(__DIR__).'/functions.php';
 		}
@@ -739,6 +740,7 @@ abstract class service {
 		//initialize the service
 		$service->init();
 
+		//return the initialized object
 		return $service;
 	}
 
