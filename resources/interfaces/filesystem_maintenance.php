@@ -31,16 +31,21 @@
  * @author Tim Fry <tim@fusionpbx.com>
  */
 trait filesystem_maintenance {
-	//
-	//override the values in the class that is using the trait or leave as default
-	//
+
 	public static $filesystem_maintenance_application = self::class;
 	public static $filesystem_retention_category = self::class;
 	public static $filesystem_retention_subcategory = 'filesystem_retention_days';
-	public static $filesystem_retention_default_value = '30';
 
 	//class must implement this method
 	abstract public static function filesystem_maintenance_files(settings $settings, string $domain_uuid, string $domain_name, string $retention_days): array;
+
+	/**
+	 * Default setting for global default values when it is created
+	 * @return string
+	 */
+	public static function filesystem_retention_default_value(): string {
+		return '30';
+	}
 
 	/**
 	 * Removes old files on a per-domain basis

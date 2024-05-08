@@ -74,11 +74,7 @@ if (!function_exists('register_maintenance_applications')) {
 
 		$result = $database->select($sql);
 		if (!empty($result)) {
-			if (version_compare(PHP_VERSION, '8.0', '<')) {
-				$registered_applications = array_map(function ($row) { return $row['default_setting_value']; }, $result);
-			} else {
-				$registered_applications = array_map(fn($row) => $row['default_setting_value'], $result);
-			}
+			$registered_applications = array_map(function ($row) { return $row['default_setting_value']; }, $result);
 		}
 		else {
 			$registered_applications = [];
@@ -97,13 +93,13 @@ if (!function_exists('register_maintenance_applications')) {
 		//initialize the array
 		$found_applications = [];
 
-		//iterate over each class and check for it implementing the maintenance interfaces
+		//iterate over each class and check for it implementing the maintenance trait
 		foreach ($declared_classes as $class) {
 			// Check if the class implements the interfaces and is not already in the default settings
-			if ((in_array('database_maintenance', class_implements($class)) ||
-				in_array('filesystem_maintenance', class_implements($class))) &&
-				!in_array($class, $registered_applications)) {
-				// Add the class to the array
+			if (has_trait($class, 'database_maintenance') || has_trait($class, 'filesystem_maintenance')) {
+//				&& !in_array($class, $registered_applications)) {
+//
+				// Add the class to the array so it can be added and default settings can be applied
 				$found_applications[] = $class;
 			}
 		}
@@ -113,55 +109,72 @@ if (!function_exists('register_maintenance_applications')) {
 			$array = [];
 			$index = 0;
 			foreach ($found_applications as $application) {
-				//format the array for what the database object needs for saving data in the global default settings
-				$array['default_settings'][$index]['default_setting_uuid'] = uuid();
-				$array['default_settings'][$index]['default_setting_category'] = 'maintenance';
-				$array['default_settings'][$index]['default_setting_subcategory'] = 'application';
-				$array['default_settings'][$index]['default_setting_name'] = 'array';
-				$array['default_settings'][$index]['default_setting_value'] = $application;
-				$array['default_settings'][$index]['default_setting_enabled'] = 'true';
-				$array['default_settings'][$index]['default_setting_description'] = '';
+				//check if the application is registered
+				if (!in_array($application, $registered_applications)) {
+					//format the array for what the database object needs for saving data in the global default settings
+					$array['default_settings'][$index]['default_setting_uuid'] = uuid();
+					$array['default_settings'][$index]['default_setting_category'] = 'maintenance';
+					$array['default_settings'][$index]['default_setting_subcategory'] = 'application';
+					$array['default_settings'][$index]['default_setting_name'] = 'array';
+					$array['default_settings'][$index]['default_setting_value'] = $application;
+					$array['default_settings'][$index]['default_setting_enabled'] = 'true';
+					$array['default_settings'][$index]['default_setting_description'] = '';
+					$index++;
+				}
 				//get the application settings from the object for database maintenance
-				$obj = new $application();
-				if ($obj instanceof database_maintenance) {
-					$category = $obj->database_retention_category();
-					$subcategory = $obj->database_retention_subcategory();
+				if (has_trait($application, 'database_maintenance')) {
+					$category = $application::$database_retention_category;
+					$subcategory = $application::$database_retention_subcategory;
+					//check if the default setting already exists in global settings
 					$uuid = default_setting_uuid($category, $subcategory);
 					if (empty($uuid)) {
-						$index++;
+						//does not exist so create it
 						$array['default_settings'][$index]['default_setting_category'] = $category;
 						$array['default_settings'][$index]['default_setting_subcategory'] = $subcategory;
 						$array['default_settings'][$index]['default_setting_uuid'] = uuid();
 						$array['default_settings'][$index]['default_setting_name'] = 'numeric';
-						$array['default_settings'][$index]['default_setting_value'] = $obj->database_retention_default_value();
+						$array['default_settings'][$index]['default_setting_value'] = $application::database_retention_default_value();
 						$array['default_settings'][$index]['default_setting_enabled'] = 'true';
 						$array['default_settings'][$index]['default_setting_description'] = '';
+						$index++;
+					} else {
+						//already exists
 					}
 				}
 				//get the application settings from the object for filesystem maintenance
-				if ($obj instanceof filesystem_maintenance) {
-					$category = $obj->filesystem_retention_category();
-					$subcategory = $obj->filesystem_retention_subcategory();
+				if (has_trait($application, 'filesystem_maintenance')) {
+					$category = $application::$filesystem_retention_category;
+					$subcategory = $application::$filesystem_retention_subcategory;
+					//check if the default setting already exists in global settings
 					$uuid = default_setting_uuid($category, $subcategory);
 					if (empty($uuid)) {
-						$index++;
 						$array['default_settings'][$index]['default_setting_category'] = $category;
 						$array['default_settings'][$index]['default_setting_subcategory'] = $subcategory;
 						$array['default_settings'][$index]['default_setting_uuid'] = uuid();
 						$array['default_settings'][$index]['default_setting_name'] = 'numeric';
-						$array['default_settings'][$index]['default_setting_value'] = $obj->filesystem_retention_default_value();
+						$array['default_settings'][$index]['default_setting_value'] = $application::filesystem_retention_default_value();
 						$array['default_settings'][$index]['default_setting_enabled'] = 'true';
 						$array['default_settings'][$index]['default_setting_description'] = '';
+						$index++;
 					}
 				}
-				$index++;
 			}
-			$database->save($array);
+			if (count($array) > 0) {
+				$database->save($array);
+			}
 		}
 	}
 }
 
 if ($domains_processed == 1) {
+	//require the function for process
+	if (!function_exists('has_trait')) {
+		if (file_exists(dirname(__DIR__, 2) . '/app/maintenance/resources/functions.php')) {
+			require_once dirname(__DIR__, 2) . '/app/maintenance/resources/functions.php';
+		} else {
+			return;
+		}
+	}
 	//run in a function to avoid variable name collisions
 	register_maintenance_applications();
 }

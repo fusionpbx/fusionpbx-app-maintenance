@@ -91,14 +91,14 @@ require_once dirname(__DIR__, 2) . '/resources/header.php';
 				$obj = new $class;
 				$installed = array_search($class, $difference) ? 'No' : 'Yes';
 				if ($obj instanceof database_maintenance) {
-					$database_maintenance_retention = $settings->get($obj->database_retention_category(), $obj->database_retention_subcategory(), '');
+					$database_maintenance_retention = $settings->get($obj::$database_retention_category, $obj::$database_retention_subcategory, '');
 					$database_maintenance_enabled = empty($database_maintenance_retention) ? "No" : "Yes";
 				} else {
 					$database_maintenance_enabled = "";
 					$database_maintenance_retention = "";
 				}
 				if ($obj instanceof filesystem_maintenance) {
-					$filesystem_maintenance_retention = $settings->get($obj->filesystem_retention_category(), $obj->filesystem_retention_subcategory(), '');
+					$filesystem_maintenance_retention = $settings->get($obj::$filesystem_retention_category, $obj::$filesystem_retention_subcategory, '');
 					$filesystem_maintenance_enabled = empty($filesystem_maintenance_retention) ? "No" : "Yes";
 				} else {
 					$filesystem_maintenance_enabled = "";

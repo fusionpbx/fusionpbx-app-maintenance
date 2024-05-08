@@ -31,17 +31,26 @@
  * @author Tim Fry <tim@fusionpbx.com>
  */
 trait database_maintenance {
-	//
-	//override the values in the class that is using the trait or leave as default
-	//
+
 	public static $database_maintenance_application = self::class;
 	public static $database_retention_category = self::class;
 	public static $database_retention_subcategory = 'database_retention_days';
-	public static $database_retention_default_value = '30';
 
 	//class must implement this method
 	abstract public static function database_maintenance_sql(string $domain_uuid, string $retention_days): string;
 
+	/**
+	 * Class can override this method to return the default value
+	 * @return string
+	 */
+	public static function database_retention_default_value(): string {
+		return '30';
+	}
+
+	/**
+	 * Class can override this method to do their own maintenance or just return the sql for this method
+	 * @return string
+	 */
 	public static function database_maintenance(database $database, settings $settings): void {
 		//get retention days
 		$days = $settings->get(self::$database_retention_category, self::$database_retention_subcategory, '');
