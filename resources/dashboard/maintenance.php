@@ -3,6 +3,13 @@
 //includes files
 	require_once dirname(__DIR__, 4) . "/resources/require.php";
 
+//check for extra functions
+	if (!function_exists('has_trait')) {
+		if (file_exists(dirname(__DIR__) . '/functions.php')) {
+			require_once dirname(__DIR__) . '/functions.php';
+		}
+	}
+
 //connect to the database
 	if (!isset($database)) {
 		$database = new database;
