@@ -23,12 +23,13 @@
 
   Contributor(s):
   Mark J Crane <markjcrane@fusionpbx.com>
-  Tim Fry <tim.fry@hotmail.com>
+  Tim Fry <tim@fusionpbx.com>
  */
 
 /**
- * base service class
+ * Service class
  * @version 1.00
+ * @author Tim Fry <tim@fusionpbx.com>
  */
 abstract class service {
 
@@ -69,7 +70,7 @@ abstract class service {
 	 * Cli Options Array
 	 * @var array
 	 */
-	private static $available_cli_options = [];
+	protected static $available_cli_options = [];
 
 	/**
 	 * Holds the configuration file location
@@ -98,7 +99,12 @@ abstract class service {
 	abstract protected static function set_cli_options();
 
 	/**
-	 * Constructor sets the log options of the class
+	 * Open a log when created.
+	 * <p>NOTE:<br>
+	 * This is a protected function so it can not be called using the keyword 'new' outside of this class or a child
+	 * class. This is due to the requirement to set signal handlers for the POSIX system outside of the constructor.
+	 * PHP seems to have an issue on some versions where setting a signal handler while in the constructor (even
+	 * calling another method from the constructor) will fail to register the signal handlers.</p>
 	 */
 	protected function __construct() {
 		openlog('[php][' . self::class . ']', LOG_CONS | LOG_NDELAY | LOG_PID, LOG_DAEMON);
@@ -118,7 +124,7 @@ abstract class service {
 	/**
 	 * Shutdown process gracefully
 	 */
-	public function shutdown() {
+	public static function shutdown() {
 		exit();
 	}
 
@@ -140,8 +146,8 @@ abstract class service {
 		pcntl_signal(SIGHUP, [$this, 'reload_settings']);
 
 		// A signal listener to stop the service
-		pcntl_signal(SIGUSR2, [$this, 'shutdown']);
-		pcntl_signal(SIGTERM, [$this, 'shutdown']);
+		pcntl_signal(SIGUSR2, [self::class, 'shutdown']);
+		pcntl_signal(SIGTERM, [self::class, 'shutdown']);
 	}
 
 	/**
@@ -444,7 +450,7 @@ abstract class service {
 		echo "\n";
 		echo "Contributor(s):\n";
 		echo "Mark J Crane <markjcrane@fusionpbx.com>\n";
-		echo "Tim Fry <tim.fry@hotmail.com>\n";
+		echo "Tim Fry <tim@fusionpbx.com>\n";
 		echo "\n";
 	}
 
@@ -737,3 +743,295 @@ abstract class service {
 	}
 
 }
+
+/*
+ * Example
+ *
+ * The child_service class must be used to demonstrate the base_service because base_service is abstract. This means that you
+ * cannot use the syntax of:
+ *   $service = new service();		//throws fatal error
+ *   $service->run();				//never reaches this statement
+ *
+ * Instead, you must use a class that will extend the service class like this:
+ *   $service = child_service::create();
+ *   $service->run();
+ * (make the code below more readable by putting)
+ * ( in the '/' line below to complete the comment section )
+ *
+
+//
+// A class that extends base_service must implement 4 functions:
+//   - run()               This is the entry point called from an external source after the create method is called
+//   - reload_settings     This is called when the CLI option -r or --reload is used
+//   - display_version
+//   - cli_options
+//
+// Using the class below use the commands
+//   $simple_example = simple_example::create();
+//   $simple_example->run();
+//
+// This will create the class and then run it once and exit with a success code.
+//
+//
+class simple_example extends service {
+
+	protected function reload_settings(): void {
+
+	}
+
+	protected static function display_version(): void {
+		echo "Version 1.00\n";
+	}
+
+	protected static function set_cli_options() {
+
+	}
+
+	public function run(): int {
+		echo "Successfully ran child service\n";
+		echo "Try command line options -h or -v\n";
+		return 0;
+	}
+}
+
+//*/
+/**/
+//
+// This class is more complex in that it will continue to run with a connection to a database
+//
+// The service class is divided between static and non-static methods. The static methods are
+// used and called before the service is run allowing the CLI options to be read and parsed
+// before the object is initialized. This allows for configuration options to be available
+// when the child class is first started up. Keep in mind that these are called statically
+// so that all callback functions declared in the cli options must be static.
+//
+class child_service extends service {
+
+	//
+	// Using a version constant is ideal for tracking and reporting
+	//
+	const CHILD_SERVICE_VERSION = '1.00';
+
+	//
+	// The parent service does not create a database connection as the child service may not need it. This example
+	// demonstrates how the config object is passed from the parent and then used in the child service to connect
+	// to other resources or use other settings the base class loaded so the child class automatically inherits.
+	//
+	private $database;
+
+	// This example uses a settings object to demonstrate how the config is passed through to the child class
+	// and is then used again in the reload_settings to demonstrate how the settings could be reloaded
+	// with changes in the configuration, database connection, and default settings without the need to create
+	// new instances of the config object.
+	private $settings;
+
+	//
+	// This function is required from the base service class because it is used when the reload command line option is used
+	//
+	protected function reload_settings(): void {
+		//informing the user in this example is simple but can use the parent class log functions
+		echo "Reloading settings\n";
+
+		//
+		// Reload the configuration file
+		//
+		self::$config->read();
+
+		//
+		// If services have their own configuration file that was passed in using the -c or --config option, the options
+		// would be available here as well to the child class
+		// By allowing the config file to be specified, it is possible for services to have a configuration specific to them
+		// while it could still be possible to allow access to the original making it very flexible with a wide degree of
+		// choices.
+		//
+		// For example, specifying a configuration file that could be used for an archive or backup server would allow
+		// the backup service to connect to another system remotely.
+		//
+		// It could also be used to separate the web configuration from system services to keep them organized and allow for
+		// configuration settings to be available should the database fail. One possible scenario where this could be useful
+		// is to send an email if the database stops responding. Currently, this is not possible as the database class uses
+		// the 'die' command to immediately exit. I think it would be good to remove that and instead set the error message
+		// to be something that would reflect the error allowing a system service to detect and even possibly correct that.
+		//
+		$alert_email = self::$config->get('alert_email', '');
+		$smtp_host = self::$config->get('smtp_host', '');
+		$smtp_port = self::$config->get('smtp_port', '');
+
+		//
+		// Ensure the database is connected with the new configuration parameters
+		//
+		$this->database->connect();
+
+		//
+		// The reload settings here completes the chain
+		//
+		$this->settings->reload();
+
+	}
+
+	//
+	// This run function is required as it is called to launch child_service. This
+	// is the entry point for the child class.
+	//
+	public function run(): int {
+
+		//
+		// Create the database object once passing a reference to the config object
+		//
+		$this->database = new database(['config' => self::$config]);
+
+		//
+		// Create the settings object using the database connection
+		//
+		$this->settings = new settings(['database' => $this->database]);
+
+		//
+		// In this example I have used the reload_settings because it is required by the parent class
+		// whenever the '-r' or '--reload' option is given on the CLI. The base class is responsible for
+		// parsing the information given on the CLI. Whenever the base class detects a '-r' option, the
+		// reload_settings method in the child class is called. This gives the responsibility to the the
+		// child class to reload any settings that might be needed during long execution of the service
+		// without stopping and starting the service. The method is called here to initialize any and all
+		// objects within the child service.
+		//
+		$this->reload_settings();
+
+		//
+		// The $running property is declared in the base service class as a boolean and it is responsible
+		// to enable this so that the child class can run. The base service class will set this to false
+		// if it receives a shutdown command from either the OS, PHP, or a posix signal allowing the child
+		// class to respond or clean up after the while loop.
+		//
+		while($this->running) {
+			//
+			// This is where the actual heart of the code for the new service will be created
+			//
+			echo "Doing something..." . date("Y-m-d H:i:s") . "\n";
+			sleep(1);
+		}
+
+
+		//
+		// Returning a non-zero value would indicate there was an issue. Here we return zero to indicate graceful shutdown.
+		//
+		return 0;
+	}
+
+	//
+	// This is the version that will be displayed when the option '-v' or '--version' is used on the command line.
+	// This run function is required
+	//
+	protected static function display_version(): void {
+		echo "Child service example version " . self::CHILD_SERVICE_VERSION . "\n";
+	}
+
+	//
+	// set_cli_options can either add to or replace options. Replacing the base options would allow an override for default behaviour.
+	// This run function is required
+	//
+	protected static function set_cli_options() {
+
+		//
+		// The options below are added to the CLI options and displayed whenever the -h or --help option is used.
+		// There are multiple methods are used to suite the style of the creator
+		//
+
+		//
+		// The callbacks set here are used to demonstrate multiple calls can be used
+		//
+
+		//using the parameter in the function
+		self::add_cli_option(
+			't:'
+			, 'template:'
+			, 'Full path and file name of the template file to use'
+			, '-t <path>'
+			, '--template <path>'
+			, ['set_template_path']
+		);
+		//using a container object
+		self::append_cli_option(cli_option::new()
+			->short_option('n')
+			->long_option('--null')
+			->description('This option is to demonstrate using a cli object to create cli options')
+			->functions(['null_function_method'])
+		);
+		//using an array of key/value pairs
+		self::append_cli_option(cli_option::new([
+			'short_option' => 'z'
+			,'long_option' => '--zero'
+			,'description' => 'This has zero effect on behavior'
+			,'function' => 'call_single_function'
+		]));
+
+		//
+		// These options are here but are commented out to allow the functionality to still exist in the parent
+		//
+//
+//		//replace cli options in the parent class using array
+//		$index = 0;
+//		$arr_options = [];
+//		$arr_options[$index]['short_option'] = 'z';
+//		$arr_options[$index]['long_option'] = 'zero';
+//		$arr_options[$index]['description'] = 'This has zero effect on behavior';
+//		$arr_options[$index]['short_description'] = '-z';
+//		$arr_options[$index]['long_description'] = '--zero';
+//		$arr_options[$index]['function'][] = 'call_single_function';
+//		self::$available_cli_options = $arr_options;
+//
+//		//replace all cli options using container object
+//		$arr_options = [];
+//		self::$available_cli_options = [];
+//		$arr_options[0] = cli_option::new()
+//			->short_option('z')
+//			->short_description('-z')
+//			->function('call_a_function')
+//			->function('call_another_function_after_first')
+//			->description('This option does nothing')
+//			->to_array();
+//
+//		$arr_options[1] = cli_option::new([
+//			'short_option' => 'z'
+//			,'long_option' => '--zero'
+//			,'description' => 'This option does nothing'
+//			,'functions' => ['call_a_function', 'call_another_function']
+//		])->to_array();
+		//self::$available_cli_options = $arr_options;
+	}
+} // class child_service
+
+//*/
+
+/*
+//
+// Standard includes do not apply for the base class because the require.php has included many other php files. These other files
+// or objects may not be required for some services. Thus, only the config is required for base_service. Child services may then
+// create a database class and use it by passing the config object to the database constructor. This is why the 'require.php' is
+// left out of the initial setup class.
+//
+
+// Use the auto_loader to find any classes needed so we don't have a lot of include statements
+// In this example, the auto_loader should not be using the PROJECT_ROOT or any other defined constants
+// because they are not needed in the initial stage of loading
+require_once __DIR__ . '/auto_loader.php';
+
+// We don't need to ever reference the object so don't assign a variable. It
+// would be a good idea to remove the auto_loader as a class declaration so
+// that there would only need to be one line. It seems illogical to have an
+// object that never needs to be referenced.
+new auto_loader();
+
+// The base_service class has a 'protected' constructor, meaning you are not able to use "new" to create the object. Instead, you
+// must use the 'create' static method to create an object. This technique is employed because some PHP versions have an issue with
+// registering signal listeners in the constructor. See the link https://www.php.net/manual/en/function.pcntl-signal.php in the user
+// comments section.
+// The child_service class does not override the parent constructor so parent constructor is used. If the child_service class does
+// have a constructor then the child class must call:
+//   parent::__construct($config);
+// as the first line of the child constructor. This is because the parent constructor uses the config class. This also means
+// that the child class must receive the config object in the constructor as a minimum.
+$service = child_service::create();
+
+// The run class is declared as abstract in the parent. So the child class must have one.
+$service->run();
+//*/
