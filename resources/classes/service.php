@@ -203,7 +203,7 @@ abstract class service {
 		self::$available_cli_options = self::base_cli_options();
 
 		//get the options from the child class
-		static::set_cli_options(self::$available_cli_options);
+		static::set_cli_options();
 
 		//collapse short options to a string
 		$short_options = self::get_short_options();
@@ -952,14 +952,14 @@ class child_service extends service {
 		//using a container object
 		self::append_cli_option(cli_option::new()
 			->short_option('n')
-			->long_option('--null')
+			->long_option('null')
 			->description('This option is to demonstrate using a cli object to create cli options')
 			->functions(['null_function_method'])
 		);
 		//using an array of key/value pairs
 		self::append_cli_option(cli_option::new([
-			'short_option' => 'z'
-			,'long_option' => '--zero'
+			'short_option' => 'z:'
+			,'long_option' => 'zero:'
 			,'description' => 'This has zero effect on behavior'
 			,'function' => 'call_single_function'
 		]));
