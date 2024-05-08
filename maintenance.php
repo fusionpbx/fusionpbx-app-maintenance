@@ -23,7 +23,7 @@ the Initial Developer. All Rights Reserved.
 
 Contributor(s):
 Mark J Crane <markjcrane@fusionpbx.com>
-Tim Fry <tim.fry@hotmail.com>
+Tim Fry <tim@fusionpbx.com>
 */
 
 //check permission

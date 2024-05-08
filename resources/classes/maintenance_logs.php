@@ -23,13 +23,13 @@
 
   Contributor(s):
   Mark J Crane <markjcrane@fusionpbx.com>
-  Tim Fry <tim.fry@hotmail.com>
+  Tim Fry <tim@fusionpbx.com>
  */
 
 /**
  * Description of maintenance_logs
  *
- * @author Tim Fry <tim.fry@hotmail.com>
+ * @author Tim Fry <tim@fusionpbx.com>
  */
 class maintenance_logs {
 

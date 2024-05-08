@@ -23,12 +23,12 @@
 
   Contributor(s):
   Mark J Crane <markjcrane@fusionpbx.com>
-  Tim Fry <tim.fry@hotmail.com>
+  Tim Fry <tim@fusionpbx.com>
  */
 
 /**
  *
- * @author Tim Fry <tim.fry@hotmail.com>
+ * @author Tim Fry <tim@fusionpbx.com>
  */
 trait database_maintenance {
 	//
