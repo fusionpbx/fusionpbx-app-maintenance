@@ -1,9 +1,9 @@
 <?php
 
 /**
- * Description of cli_option
+ * Container object for creating command line options
  *
- * @author Tim Fry <tim.fry@hotmail.com>
+ * @author Tim Fry <tim@fusionpbx.com>
  */
 class cli_option {
 
@@ -23,14 +23,29 @@ class cli_option {
 		$this->functions = [];
 	}
 
-	public static function new(...$options): self {
-		$class_name = self::class;
+	public static function new(...$options): cli_option {
+		$obj = new cli_option();
+
+		//automatically assign properties to the object that were passed in key/value pairs
+		self::parse_options($obj, $options);
+
+
+		//return the cli_option with all properties filled in that were passed
+		return $obj;
+	}
+
+	private static function parse_options($obj, $options) {
 		foreach ($options as $key => $value) {
-			if (property_exists($class_name, $key)) {
-				$class_name->{$key} = $value;
+			if (is_array($value)) {
+				self::parse_options($obj, $value);
+			}
+			//call the method with the name of $key and pass it $value
+			if (method_exists($obj, $key)) {
+				$obj->{$key}($value);
+			} elseif (property_exists($obj, $key)) {
+				$obj->{$key} = $value;
 			}
 		}
-		return new $class_name();
 	}
 
 	public function short_option(?string $short_option = null) {
@@ -63,9 +78,11 @@ class cli_option {
 			return $this;
 		}
 		if (empty($this->short_description)) {
-			$short_description = '-' . $this->short_option;
 			if (str_ends_with($this->short_option, ':')) {
-				$short_description .= " <value>";
+				$short = rtrim($this->short_option, ':');
+				$short_description = "-$short <value>";
+			} else {
+				$short_description = '-' . $this->short_option;
 			}
 		} else {
 			$short_description = $this->short_description;
@@ -74,14 +91,16 @@ class cli_option {
 	}
 
 	public function long_description(?string $long_description = null) {
-		if (!empty($long_description)) {
+		if ($long_description !== null) {
 			$this->long_description = $long_description;
 			return $this;
 		}
 		if (empty($this->long_description)) {
-			$long_description = '-' . $this->long_option;
 			if (str_ends_with($this->long_option, ':')) {
-				$long_description .= " <value>";
+				$long = rtrim($this->long_option, ':');
+				$long_description = "--$long <value>";
+			} else {
+				$long_description = '--' . $this->long_option;
 			}
 		} else {
 			$long_description = $this->long_description;
@@ -90,8 +109,16 @@ class cli_option {
 	}
 
 	public function functions(?array $functions = null) {
-		if (!empty($functions)) {
+		if ($functions !== null) {
 			$this->functions = $functions;
+			return $this;
+		}
+		return $this->functions;
+	}
+
+	public function function(?string $function = null) {
+		if ($function !== null) {
+			$this->functions += [$function];
 			return $this;
 		}
 		return $this->functions;
