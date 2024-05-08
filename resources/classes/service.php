@@ -705,13 +705,16 @@ abstract class service {
 		defined('STDIN') or die('Unauthorized');
 
 		//force launching in a seperate process
-//		if ($pid = pcntl_fork()) {
-//			exit;
-//		}
-//
-//		if ($cid = pcntl_fork()) {
-//			exit;
-//		}
+		if ($pid = pcntl_fork()) {
+			exit;
+		}
+
+		if ($cid = pcntl_fork()) {
+			exit;
+		}
+
+		//set the PID file we will use
+		self::$pid_file = self::get_pid_filename();
 
 		//TODO remove updated settings object after merge
 		if (file_exists( __DIR__ . '/settings.php')) {
