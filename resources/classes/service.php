@@ -795,7 +795,7 @@ class simple_example extends service {
 }
 
 //*/
-/**/
+/*
 //
 // This class is more complex in that it will continue to run with a connection to a database
 //
