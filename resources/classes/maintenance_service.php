@@ -149,7 +149,7 @@ class maintenance_service extends service {
 		$this->check_interval = intval($this->settings->get('maintenance', 'check_interval', 33));
 
 		//check for starting service exactly on the time needed
-		if (date('H:i') == $this->execute_time || self::$execute_on_startup) {
+		if ($this->enabled && !empty($this->execute_time) && (date('H:i') == $this->execute_time || self::$execute_on_startup)) {
 			$this->run_maintenance();
 		}
 	}

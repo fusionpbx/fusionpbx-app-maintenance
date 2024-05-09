@@ -44,41 +44,44 @@ else {
 $language = new text;
 $text = $language->get();
 
-//set additional variables
+//database and settings for users preferences
+$domain_uuid = $_SESSION['domain_uuid'] ?? '';
+$user_uuid = $_SESSION['user_uuid'] ?? '';
 $database = new database;
-$setting = new settings(['database' => $database, 'domain_uuid' => $_SESSION['domain_uuid'] ?? '', 'user_uuid' => $_SESSION['user_uuid'] ?? '']);
-$search = $_GET["search"] ?? '';
-$show = $_GET["show"] ?? '';
+$setting = new settings(['database' => $database, 'domain_uuid' => $domain_uuid, 'user_uuid' => $user_uuid]);
+
+//set request variables
+$search = $_REQUEST["search"] ?? '';
+$show = $_REQUEST["show"] ?? '';
+$action = $_REQUEST['action'] ?? '';
+$maintenance_logs_js = $_POST['maintenance_logs'] ?? [];
+
+//get order and order by
+$order_by = $_GET["order_by"] ?? '';
+$order = $_GET["order"] ?? '';
 
 //set from session variables
 $list_row_edit_button = !empty($_SESSION['theme']['list_row_edit_button']['boolean']) ? $_SESSION['theme']['list_row_edit_button']['boolean'] : 'false';
 
-//get the http post data
-if (!empty($_POST['maintenance_logs']) && is_array($_POST['maintenance_logs'])) {
-	$action = $_POST['action'];
-	$search = $_POST['search'];
-	$maintenance_logs = $_POST['maintenance_logs'];
-}
-
 //process the http post data by action
-if (!empty($action) && is_array($maintenance_logs) && @sizeof($maintenance_logs) != 0) {
+if (!empty($action) && count($maintenance_logs_js) > 0) {
 	switch ($action) {
 		case 'copy':
 			if (permission_exists('maintenance_log_add')) {
 				$obj = new maintenance_logs($database, $setting);
-				$obj->copy($maintenance_logs);
+				$obj->copy($maintenance_logs_js);
 			}
 			break;
 		case 'toggle':
 			if (permission_exists('maintenance_log_edit')) {
 				$obj = new maintenance_logs($database, $setting);
-				$obj->toggle($maintenance_logs);
+				$obj->toggle($maintenance_logs_js);
 			}
 			break;
 		case 'delete':
 			if (permission_exists('maintenance_log_delete')) {
 				$obj = new maintenance_logs($database, $setting);
-				$obj->delete($maintenance_logs);
+				$obj->delete($maintenance_logs_js);
 			}
 			break;
 	}
@@ -86,10 +89,6 @@ if (!empty($action) && is_array($maintenance_logs) && @sizeof($maintenance_logs)
 	header('Location: maintenance_logs.php'.($search != '' ? '?search='.urlencode($search) : null));
 	exit;
 }
-
-//get order and order by
-$order_by = $_GET["order_by"] ?? '';
-$order = $_GET["order"] ?? '';
 
 //set the time zone
 if (isset($_SESSION['domain']['time_zone']['name'])) {
@@ -106,85 +105,93 @@ if (isset($_GET["search"]) && $_GET["search"] != '') {
 
 //get the count
 $parameters = [];
-$sql = "select count(maintenance_log_uuid) \n";
-$sql .= "from v_maintenance_logs \n";
-//	if ($show == "all" && permission_exists('maintenance_log_all')) {
-//		$sql .= "where true \n";
-//	}
-//	else {
-//		$sql .= "where (domain_uuid = :domain_uuid or domain_uuid is null) ";
-//		$parameters['domain_uuid'] = $domain_uuid;
-//	}
-if (!empty($search)) {
-	$sql .= "and (";
-	$sql .= "	lower(maintenance_address) like :search ";
-	$sql .= "	or lower(request_scheme) like :search ";
-	$sql .= "	or lower(http_host) like :search ";
-	$sql .= "	or lower(server_port) like :search ";
-	$sql .= "	or lower(server_protocol) like :search ";
-	$sql .= "	or lower(query_string) like :search ";
-	$sql .= "	or lower(remote_address) like :search ";
-	$sql .= "	or lower(http_user_agent) like :search ";
-	$sql .= "	or lower(http_status) like :search ";
-	$sql .= "	or lower(http_status_code) like :search ";
-	$sql .= ") ";
+$sql = "SELECT"
+	. " count(m.maintenance_log_uuid)"
+	. " FROM"
+	. "  v_maintenance_logs m"
+	. " JOIN v_domains d ON d.domain_uuid = m.domain_uuid";
+if ($show == "all" && permission_exists('maintenance_log_all')) {
+	$sql .= " WHERE true";
+}
+else {
+	$sql .= " WHERE (m.domain_uuid = :domain_uuid OR m.domain_uuid IS NULL) ";
+	$parameters['domain_uuid'] = $domain_uuid;
+}
+
+if (isset($search)) {
+	$sql .= " and (";
+	$sql .= " lower(m.maintenance_log_application) like :search";
+	$sql .= " or lower(m.maintenance_log_message) like :search";
+	$sql .= " or lower(m.maintenance_log_status) like :search";
+	$sql .= " or lower(d.domain_name) like :search";
+	$sql .= ")";
 	$parameters['search'] = '%'.$search.'%';
 }
-$num_rows = $database->select($sql, $parameters, 'column');
+
+//	$parameters['time_zone'] = $time_zone;
+$sql .= " GROUP BY m.maintenance_log_epoch";
+$sql .= order_by($order_by, $order, 'maintenance_log_epoch', 'desc');
+$sql .= limit_offset($rows_per_page, $offset);
+
+
+if (count($parameters) > 0) {
+	$num_rows = $database->select($sql, $parameters, 'column');
+} else {
+	$num_rows = $database->select($sql, null, 'column');
+}
 
 //prepare to page the results
-//	$rows_per_page = (!empty($_SESSION['domain']['paging']['numeric'])) ? $_SESSION['domain']['paging']['numeric'] : 50;
-//	$param = $search ? "&search=".$search : null;
-//	$page = isset($_GET['page']) ? $_GET['page'] : 0;
-//	list($paging_controls, $rows_per_page) = paging($num_rows, $param, $rows_per_page);
-//	list($paging_controls_mini, $rows_per_page) = paging($num_rows, $param, $rows_per_page, true);
-//	$offset = $rows_per_page * $page;
+	$rows_per_page = (!empty($_SESSION['domain']['paging']['numeric'])) ? $_SESSION['domain']['paging']['numeric'] : 50;
+	$param = $search ? "&search=".$search : null;
+	$page = isset($_GET['page']) ? $_GET['page'] : 0;
+	list($paging_controls, $rows_per_page) = paging($num_rows, $param, $rows_per_page);
+	list($paging_controls_mini, $rows_per_page) = paging($num_rows, $param, $rows_per_page, true);
+	$offset = $rows_per_page * $page;
 
 //get the list
-$sql = "select"
-	. " maintenance_log_uuid"
-	. ", domain_uuid"
-	. ", maintenance_log_application"
-	. ", to_timestamp(maintenance_log_epoch)::timestamptz as maintenance_log_epoch"
-	. ", maintenance_log_message"
-	. ", maintenance_log_status"
-	. " from"
-	. " v_maintenance_logs"
-;
-//	if (isset($search)) {
-//		$sql .= "and ( \n";
-//		$sql .= "	lower(maintenance_address) like :search \n";
-//		$sql .= "	or lower(request_scheme) like :search \n";
-//		$sql .= "	or lower(http_host) like :search \n";
-//		$sql .= "	or lower(server_port) like :search \n";
-//		$sql .= "	or lower(server_protocol) like :search \n";
-//		$sql .= "	or lower(query_string) like :search \n";
-//		$sql .= "	or lower(remote_address) like :search \n";
-//		$sql .= "	or lower(http_user_agent) like :search \n";
-//		$sql .= "	or lower(http_status) like :search \n";
-//		$sql .= "	or lower(http_status_code) like :search \n";
-//		$sql .= ") ";
-//		$parameters['search'] = '%'.$search.'%';
-//	}
+$sql = "SELECT"
+	. " m.maintenance_log_uuid"
+	. ", m.domain_uuid"
+	. ", d.domain_name"
+	. ", m.maintenance_log_application"
+	. ", to_timestamp(m.maintenance_log_epoch)::timestamptz AS maintenance_log_epoch"
+	. ", m.maintenance_log_message"
+	. ", m.maintenance_log_status"
+	. " FROM"
+	. "  v_maintenance_logs m"
+	. " JOIN v_domains d ON d.domain_uuid = m.domain_uuid";
+if ($show == "all" && permission_exists('maintenance_log_all')) {
+	$sql .= " WHERE true";
+}
+else {
+	$sql .= " WHERE (m.domain_uuid = :domain_uuid OR m.domain_uuid IS NULL) ";
+	$parameters['domain_uuid'] = $domain_uuid;
+}
 
-$parameters = [];
+if (isset($search)) {
+	$sql .= " and (";
+	$sql .= " lower(m.maintenance_log_application) like :search";
+	$sql .= " or lower(m.maintenance_log_message) like :search";
+	$sql .= " or lower(m.maintenance_log_status) like :search";
+	$sql .= " or lower(d.domain_name) like :search";
+	$sql .= ")";
+	$parameters['search'] = '%'.$search.'%';
+}
+
 //	$parameters['time_zone'] = $time_zone;
-//	$sql .= order_by($order_by, $order, 'timestamp', 'desc');
-//	$sql .= limit_offset($rows_per_page, $offset);
-//	$maintenance_logs = $database->select($sql, $parameters, 'all');
-$maintenance_logs = $database->select($sql);
+$sql .= order_by($order_by, $order, 'maintenance_log_epoch', 'desc');
+$sql .= limit_offset($rows_per_page, $offset);
+$maintenance_logs = $database->select($sql, $parameters, 'all');
+unset($sql, $parameters);
 
 //no results
 if ($maintenance_logs === false) {
 	$maintenance_logs = [];
 }
 
-//reset parameters
-unset($sql, $parameters);
-
-//create token
-$object = new token;
-$token = $object->create($_SERVER['PHP_SELF']);
+////create token
+//$token = new token;
+//$token_arr = $token->create($_SERVER['PHP_SELF']);
 
 //include the header
 $document['title'] = $text['title-maintenance_logs'];
@@ -201,6 +208,14 @@ echo "<div class='action_bar' id='action_bar'>\n";
 			echo button::create(['type'=>'button','label'=>$text['button-delete'],'icon'=>$_SESSION['theme']['button_icon_delete'],'name'=>'btn_delete','onclick'=>"modal_open('modal-delete','btn_delete');"]);
 		}
 		echo "<form id='form_search' class='inline' method='get'>\n";
+			if (permission_exists('maintenance_log_all')) {
+				if ($show == 'all') {
+					echo "<input type='hidden' name='show' value='all'>\n";
+				}
+				else {
+					echo button::create(['type'=>'button','label'=>$text['button-show_all'],'icon'=>$_SESSION['theme']['button_icon_all'],'link'=>'?show=all']);
+				}
+			}
 			echo "<input type='text' class='txt list-search' name='search' id='search' value=\"".escape($search)."\" placeholder=\"".$text['label-search']."\" onkeydown='list_search_reset();'>";
 			echo button::create(['label'=>$text['button-search'],'icon'=>$_SESSION['theme']['button_icon_search'],'type'=>'submit','id'=>'btn_search','style'=>($search != '' ? 'display: none;' : null)]);
 			echo button::create(['label'=>$text['button-reset'],'icon'=>$_SESSION['theme']['button_icon_reset'],'type'=>'button','id'=>'btn_reset','link'=>'maintenance_logs.php','style'=>($search == '' ? 'display: none;' : null)]);
@@ -234,11 +249,11 @@ echo "<form id='form_list' method='post'>\n";
 			if ($show == 'all' && permission_exists('maintenance_log_all')) {
 				echo th_order_by('domain_name', $text['label-domain'], $order_by, $order);
 			}
-			echo "<th class='left'>".$text['label-domain']."</th>\n";
-			echo "<th class='left'>".$text['label-application']."</th>\n";
-			echo "<th class='left'>".$text['label-server_timestamp']."</th>\n";
-			echo "<th class='left'>".$text['label-status']."</th>\n";
-			echo "<th class='left hide-md-dn'>".$text['label-message']."</th>\n";
+			echo th_order_by('application', $text['label-application'], $order_by, $order);
+			echo th_order_by('server_timestamp', $text['label-server_timestamp'], $order_by, $order);
+			echo th_order_by('status', $text['label-status'], $order_by, $order);
+			echo th_order_by('message', $text['label-message'], $order_by, $order);
+//			echo "<th class='left hide-md-dn'>".$text['label-message']."</th>\n";
 			if (permission_exists('maintenance_log_edit') && $list_row_edit_button == 'true') {
 				echo "<td class='action-button'>&nbsp;</td>\n";
 			}
@@ -261,7 +276,9 @@ echo "<form id='form_list' method='post'>\n";
 							echo "<input type='hidden' name='maintenance_logs[$x][uuid]' value='".escape($row['maintenance_log_uuid'])."' />\n";
 						echo "</td>\n";
 					}
-					echo "<td class='left'>$domain_name</td>\n";
+					if ($show === 'all') {
+						echo "<td class='left'>$domain_name</td>\n";
+					}
 					echo "<td class='left'>".escape($application_name)."</td>\n";
 					echo "<td class='left'>".escape($row['maintenance_log_epoch'])."</td>\n";
 					echo "<td class='left'>".escape($row['maintenance_log_status'])."</td>\n";
@@ -279,7 +296,8 @@ echo "<form id='form_list' method='post'>\n";
 	echo "</table>\n";
 	echo "<br />\n";
 	echo "<div align='center'>".$paging_controls."</div>\n";
-	echo "<input type='hidden' name='".$token['name']."' value='".$token['hash']."'>\n";
+	echo new token;
+	//echo "<input type='hidden' name='".$token_arr['name']."' value='".$token_arr['hash']."'>\n";
 echo "</form>\n";
 
 //include the footer

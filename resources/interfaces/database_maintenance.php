@@ -60,7 +60,7 @@ trait database_maintenance {
 			foreach ($domains as $domain_uuid => $domain_name) {
 				$database->execute(self::database_maintenance_sql($domain_uuid, $days));
 				if ($database->message['code'] === '200') {
-					maintenance_service::log_write(self::$database_maintenance_application, "Removed maintenance log entries older than $days days for domain $domain_name");
+					maintenance_service::log_write(self::$database_maintenance_application, "Removed maintenance log entries older than $days days", $domain_uuid);
 				} else {
 					maintenance_service::log_write(self::$database_maintenance_application, "Failed to clear entries", $domain_uuid, maintenance_service::LOG_ERROR);
 				}

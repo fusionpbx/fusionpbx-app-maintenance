@@ -67,6 +67,9 @@
 	$y++;
 	$apps[$x]['permissions'][$y]['name'] = 'maintenance_status_view';
 	$apps[$x]['permissions'][$y]['groups'][] = 'superadmin';
+	$y++;
+	$apps[$x]['permissions'][$y]['name'] = 'maintenance_log_all';
+	$apps[$x]['permissions'][$y]['groups'][] = 'superadmin';
 
 	//database table
 	$table_index = 0;

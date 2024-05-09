@@ -107,7 +107,6 @@ class maintenance_logs {
 		foreach ($records as $x => $record) {
 			if (!empty($record['checked']) && $record['checked'] == 'true' && is_uuid($record['uuid'])) {
 				$remove_array[self::TABLE][$x][self::UUID_PREFIX . 'uuid'] = $record['uuid'];
-				$remove_array[self::TABLE][$x]['domain_uuid'] = $this->domain_uuid;
 			}
 		}
 
