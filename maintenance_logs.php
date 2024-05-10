@@ -203,9 +203,9 @@ echo "<div class='action_bar' id='action_bar'>\n";
 		echo "<b>".$text['title-maintenance_logs']." (".$num_rows.")</b>";
 	echo "</div>\n";
 	echo "<div class='actions'>\n";
-		echo button::create(['type'=>'button','label'=>$text['button-back'],'icon'=>$_SESSION['theme']['button_icon_back'],'id'=>'btn_back','style'=>'margin-right: 15px;','link'=>'maintenance.php']);
+		echo button_back::create('maintenance.php');
 		if (permission_exists('maintenance_log_delete') && $maintenance_logs) {
-			echo button::create(['type'=>'button','label'=>$text['button-delete'],'icon'=>$_SESSION['theme']['button_icon_delete'],'name'=>'btn_delete','onclick'=>"modal_open('modal-delete','btn_delete');"]);
+			echo button_delete::create();
 		}
 		echo "<form id='form_search' class='inline' method='get'>\n";
 			if (permission_exists('maintenance_log_all')) {
@@ -213,12 +213,12 @@ echo "<div class='action_bar' id='action_bar'>\n";
 					echo "<input type='hidden' name='show' value='all'>\n";
 				}
 				else {
-					echo button::create(['type'=>'button','label'=>$text['button-show_all'],'icon'=>$_SESSION['theme']['button_icon_all'],'link'=>'?show=all']);
+					echo button_show_all::create(['link' => '/other.php']);
 				}
 			}
 			echo "<input type='text' class='txt list-search' name='search' id='search' value=\"".escape($search)."\" placeholder=\"".$text['label-search']."\" onkeydown='list_search_reset();'>";
-			echo button::create(['label'=>$text['button-search'],'icon'=>$_SESSION['theme']['button_icon_search'],'type'=>'submit','id'=>'btn_search','style'=>($search != '' ? 'display: none;' : null)]);
-			echo button::create(['label'=>$text['button-reset'],'icon'=>$_SESSION['theme']['button_icon_reset'],'type'=>'button','id'=>'btn_reset','link'=>'maintenance_logs.php','style'=>($search == '' ? 'display: none;' : null)]);
+			echo button_search::create(empty($search));
+			echo button_reset::create(empty($search));
 			if (!empty($paging_controls_mini)) {
 				echo "<span style='margin-left: 15px;'>".$paging_controls_mini."</span>\n";
 			}

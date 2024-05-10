@@ -42,6 +42,12 @@ if (permission_exists('maintenance_view')) {
 $object = new token;
 $token = $object->create($_SERVER['PHP_SELF']);
 
+if (!empty($_REQUEST['search'])) {
+	$search = $_REQUEST['search'];
+} else {
+	$search = '';
+}
+
 //internationalization
 $language = new text;
 $text = $language->get();
@@ -69,7 +75,8 @@ require_once dirname(__DIR__, 2) . '/resources/header.php';
 		echo button::create(['type'=>'button','label'=>$text['button-logs'],'icon'=>'fas fa-scroll fa-fw','id'=>'btn_logs', 'link'=>'maintenance_logs.php']);
 		echo button::create(['type'=>'button','label'=>$text['button-register'],'icon'=>'fas fa-registered fa-fw','id'=>'btn_register']);
 		echo "<input type='text' class='txt list-search' name='search' id='search' value=\"".escape($search)."\" placeholder=\"".$text['label-search']."\" onkeydown=''>";
-		echo button::create(['label'=>$text['button-search'],'icon'=>$_SESSION['theme']['button_icon_search'],'type'=>'submit','id'=>'btn_search']);
+		echo button_search::create(empty($search));
+		echo button_reset::create(empty($search));
 	echo "</div>";
 	echo "<div style='clear: both;'></div>\n";
 	echo "<br/><br/>";
