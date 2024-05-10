@@ -213,7 +213,7 @@ echo "<div class='action_bar' id='action_bar'>\n";
 					echo "<input type='hidden' name='show' value='all'>\n";
 				}
 				else {
-					echo button_show_all::create(['link' => '/other.php']);
+					echo button_show_all::create();
 				}
 			}
 			echo "<input type='text' class='txt list-search' name='search' id='search' value=\"".escape($search)."\" placeholder=\"".$text['label-search']."\" onkeydown='list_search_reset();'>";

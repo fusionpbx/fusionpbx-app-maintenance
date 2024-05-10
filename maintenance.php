@@ -55,8 +55,14 @@ $text = $language->get();
 //create a new settings object ignoring the current domain
 $settings = new settings();
 
+//load all classes
+$class_files = glob(dirname(__DIR__, 2) . '/*/*/resources/classes/*');
+foreach ($class_files as $file) {
+	include_once $file;
+}
+
 //get the current list of all database and filesystem maintenance classes
-$maintenance_classes = implementing_classes_arr('database_maintenance', 'filesystem_maintenance');
+$maintenance_classes = trait_classes_arr('database_maintenance', 'filesystem_maintenance');
 
 //get the list in the default settings
 $default_settings_classes = $settings->get('maintenance', 'application', []);
@@ -70,7 +76,7 @@ require_once dirname(__DIR__, 2) . '/resources/header.php';
 
 
 	echo "<div class='action_bar' id='action_bar'>";
-	echo "<div class='heading'><b>Maintenance (<?= count($maintenance_classes) ?>)</b></div>";
+	echo "<div class='heading'><b>Maintenance (" . count($maintenance_classes) . ")</b></div>";
 	echo "<div class='actions'>";
 		echo button::create(['type'=>'button','label'=>$text['button-logs'],'icon'=>'fas fa-scroll fa-fw','id'=>'btn_logs', 'link'=>'maintenance_logs.php']);
 		echo button::create(['type'=>'button','label'=>$text['button-register'],'icon'=>'fas fa-registered fa-fw','id'=>'btn_register']);
@@ -92,17 +98,16 @@ require_once dirname(__DIR__, 2) . '/resources/header.php';
 				echo "<th>Retention Days</th>";
 			echo "</tr>";
 			foreach ($maintenance_classes as $x => $class) {
-				$obj = new $class;
 				$installed = array_search($class, $difference) ? 'No' : 'Yes';
-				if ($obj instanceof database_maintenance) {
-					$database_maintenance_retention = $settings->get($obj::$database_retention_category, $obj::$database_retention_subcategory, '');
+				if (has_trait($class, 'database_maintenance')) {
+					$database_maintenance_retention = $settings->get($class::$database_retention_category, $class::$database_retention_subcategory, '');
 					$database_maintenance_enabled = empty($database_maintenance_retention) ? "No" : "Yes";
 				} else {
 					$database_maintenance_enabled = "";
 					$database_maintenance_retention = "";
 				}
-				if ($obj instanceof filesystem_maintenance) {
-					$filesystem_maintenance_retention = $settings->get($obj::$filesystem_retention_category, $obj::$filesystem_retention_subcategory, '');
+				if (has_trait($class, 'filesystem_maintenance') ) {
+					$filesystem_maintenance_retention = $settings->get($class::$filesystem_retention_category, $class::$filesystem_retention_subcategory, '');
 					$filesystem_maintenance_enabled = empty($filesystem_maintenance_retention) ? "No" : "Yes";
 				} else {
 					$filesystem_maintenance_enabled = "";

@@ -147,3 +147,50 @@
 			return $found_classes;
 		}
 	}
+
+	if (!function_exists('user_defined_classes')) {
+		function user_defined_classes () {
+			return array_filter(
+			   get_declared_classes(),
+			   function($className) {
+				   return !call_user_func(
+					   array(new ReflectionClass($className), 'isInternal')
+				   );
+			   }
+			);
+		}
+	}
+
+	if (!function_exists('trait_classes')) {
+		function trait_classes(string $trait) {
+			// get user defined classes
+			$user_classes = user_defined_classes();
+
+			// select only classes that use trait $trait
+			$trait_classes = array_filter(
+			   $user_classes,
+			   function($className) use($trait) {
+				 $traits = class_uses($className);
+				 return isset($traits[$trait]);
+			   }
+			);
+			return $trait_classes;
+		}
+	}
+
+	if (!function_exists('trait_classes_arr')) {
+		function trait_classes_arr(...$traits) {
+			// get user defined classes
+			$user_classes = user_defined_classes();
+
+			// select only classes that use trait $trait
+			$trait_classes = array_filter(
+			   $user_classes,
+			   function($classname) use($traits) {
+				 $trait_class = class_uses($classname);
+				 return count(array_intersect($trait_class, $traits)) > 0;
+			   }
+			);
+			return $trait_classes;
+		}
+	}
