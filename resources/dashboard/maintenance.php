@@ -232,7 +232,7 @@
 					$database_default_value = $maintenance_app::database_retention_default_value();
 					$database_days = $setting->get($database_category, $database_subcategory, '');
 					//uuid of setting
-					$database_setting_uuids = maintenance_service::find_uuid($database, $database_category, $database_category);
+					$database_setting_uuids = maintenance_service::find_uuid($database, $database_category, $database_subcategory);
 					$database_setting_uuid = $database_setting_uuids['uuid'];
 					$database_setting_table = $database_setting_uuids['table'];
 					if (empty($database_days)) {
