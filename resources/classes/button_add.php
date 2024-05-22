@@ -26,15 +26,24 @@
  * Tim Fry <tim@fusionpbx.com>
  */
 
-if ($domains_processed == 1) {
-	//use global config and database objects if available
-	global $config, $database;
-	if ($config === null) {
-		$config = new config();
-	}
-	if ($database === null) {
-		$database = new database(['config' => $config]);
-	}
+/**
+ * Description of button_save
+ *
+ * @author Tim Fry <tim@fusionpbx.com>
+ */
+class button_add extends button {
 
-	maintenance::app_defaults($database);
+	public static function create($link, $array = []): string {
+		global $text;
+		$default_values = [
+			'type' => 'submit',
+			'label' => $text['button-add'],
+			'icon' => $_SESSION['theme']['button_icon_add'] ?? 'plus',
+			'id' => 'btn_add',
+			'name' => 'action',
+			'value' => 'add',
+			'link' => $link,
+		];
+		return parent::create(array_merge($default_values, $array));
+	}
 }

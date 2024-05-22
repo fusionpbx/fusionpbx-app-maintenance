@@ -26,15 +26,23 @@
  * Tim Fry <tim@fusionpbx.com>
  */
 
-if ($domains_processed == 1) {
-	//use global config and database objects if available
-	global $config, $database;
-	if ($config === null) {
-		$config = new config();
+/**
+ * Description of button_save
+ *
+ * @author Tim Fry <tim@fusionpbx.com>
+ */
+class button_toggle extends button {
+	public static function create($array = []): string {
+		global $text;
+		$default_values = [
+			'type'=>'button',
+			'label'=>$text['button-toggle'],
+			'icon'=>$_SESSION['theme']['button_icon_toggle'],
+			'id'=>'btn_toggle',
+			'name'=>'btn_toggle',
+			'style'=>'display: none;',
+			'onclick'=>"modal_open('modal-toggle','btn_toggle');"
+		];
+		return parent::create(array_merge($default_values, $array));
 	}
-	if ($database === null) {
-		$database = new database(['config' => $config]);
-	}
-
-	maintenance::app_defaults($database);
 }

@@ -26,15 +26,28 @@
  * Tim Fry <tim@fusionpbx.com>
  */
 
-if ($domains_processed == 1) {
-	//use global config and database objects if available
-	global $config, $database;
-	if ($config === null) {
-		$config = new config();
-	}
-	if ($database === null) {
-		$database = new database(['config' => $config]);
-	}
+/**
+ * Description of modal_toggle
+ *
+ * @author Tim Fry <tim@fusionpbx.com>
+ */
+class modal_toggle extends modal {
 
-	maintenance::app_defaults($database);
+	public static function create($form_id, $array = []): string {
+		global $text;
+		$default_values = [
+			'id'=>'modal-toggle',
+			'type'=>'toggle',
+			'actions'=> button::create([
+				'type'=>'button',
+				'label'=>$text['button-continue'],
+				'icon'=>'check',
+				'id'=>'btn_toggle',
+				'style'=>'float: right; margin-left: 15px;',
+				'collapse'=>'never',
+				'onclick'=>"modal_close(); list_action_set('toggle'); list_form_submit('$form_id');"
+			])
+		];
+		return parent::create(array_merge($default_values, $array));
+	}
 }

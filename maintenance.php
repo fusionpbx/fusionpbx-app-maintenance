@@ -53,7 +53,31 @@ $language = new text;
 $text = $language->get();
 
 //create a new settings object ignoring the current domain
-$settings = new settings();
+$database = new database();
+
+//process registering maintenance applications
+if (!empty($_REQUEST['action'])) {
+	//validate the token
+	$token = new token;
+	if (!$token->validate($_SERVER['PHP_SELF'])) {
+		message::add($text['message-invalid_token'], 'negative');
+		header('Location: maintenance.php');
+		exit;
+	}
+	$action = $_REQUEST['action'];
+	$checked_apps = $_REQUEST['maintenance_apps'] ?? [];
+	switch($action) {
+		case 'toggle':
+			if (maintenance::register_applications($database, $checked_apps)) {
+				message::add($text['message-toggle']);
+			}
+			break;
+	}
+	$toggle_maintenance_apps = $_REQUEST['toggle'];
+}
+
+//load the settings
+$settings = new settings(['database' => $database]);
 
 //load all classes
 $class_files = glob(dirname(__DIR__, 2) . '/*/*/resources/classes/*');
@@ -70,26 +94,48 @@ $default_settings_classes = $settings->get('maintenance', 'application', []);
 //compare to the installed list
 $difference = array_diff($maintenance_classes, $default_settings_classes);
 
+//create the token
+$object = new token;
+$token = $object->create($_SERVER['PHP_SELF']);
+
+require_once dirname(__DIR__, 2) . '/resources/header.php';
+
 //show the content
 $document['title'] = $text['title-maintenance'];
-require_once dirname(__DIR__, 2) . '/resources/header.php';
 
 
 	echo "<div class='action_bar' id='action_bar'>";
 	echo "<div class='heading'><b>Maintenance (" . count($maintenance_classes) . ")</b></div>";
 	echo "<div class='actions'>";
-		echo button::create(['type'=>'button','label'=>$text['button-logs'],'icon'=>'fas fa-scroll fa-fw','id'=>'btn_logs', 'link'=>'maintenance_logs.php']);
-		echo button::create(['type'=>'button','label'=>$text['button-register'],'icon'=>'fas fa-registered fa-fw','id'=>'btn_register']);
-		echo "<input type='text' class='txt list-search' name='search' id='search' value=\"".escape($search)."\" placeholder=\"".$text['label-search']."\" onkeydown=''>";
-		echo button_search::create(empty($search));
-		echo button_reset::create(empty($search));
+		//echo "<form method='post' id='frm'>";
+			//logs button
+			echo button::create(['type'=>'button','label'=>$text['button-logs'],'icon'=>'fas fa-scroll fa-fw','id'=>'btn_logs', 'link'=>'_self']);
+			//register button
+			echo button_toggle::create(['label'=>$text['button-register'],'icon'=>'fas fa-registered fa-fw']);
+			//search input box
+			echo "<input type='text' class='txt list-search' name='search' id='search' value=\"".escape($search)."\" placeholder=\"".$text['label-search']."\" onkeydown=''>";
+			//search button
+			echo button_search::create(empty($search));
+			//reset button
+			echo button_reset::create(empty($search));
+		//echo "</form>";
 	echo "</div>";
+
+	//javascript modal boxes
+	echo modal_copy::create('form_list');
+	echo modal_delete::create('form_list');
+	echo modal_toggle::create('form_list');
+
 	echo "<div style='clear: both;'></div>\n";
 	echo "<br/><br/>";
-	echo "<form id='form_list'>";
+	echo "<form id='form_list' method='post'>";
+		echo "<input type='hidden' id='action' name='action' value=''>\n";
+		echo "<input type='hidden' name='search' value=\"".escape($search)."\">\n";
 		echo "<table class='list'>";
 			echo "<tr class='list-header'>";
-				echo "<th class='checkbox'><input type='checkbox'/></th>";
+				echo "<th class='checkbox'>";
+					echo "<input type='checkbox' id='checkbox_all' name='checkbox_all' onclick='list_all_toggle(); checkbox_on_change(this);' ".(empty($maintenance_classes) ? "style='visibility: hidden;'" : null).">\n";
+				echo "</th>";
 				echo "<th>Name</th>";
 				echo "<th>Registered</th>";
 				echo "<th>Database Enabled</th>";
@@ -114,17 +160,21 @@ require_once dirname(__DIR__, 2) . '/resources/header.php';
 					$filesystem_maintenance_retention = "";
 				}
 
-			echo "<tr class='list-row' style=''>";
-				echo "<td class='center'><input type='checkbox' id='$class'/></td>";
-				echo "<td>$class</td>";
-				echo "<td ". ($installed=='No' ? "style=' background-color: var(--warning);'" : 'style=" background-color: none;"') .">$installed</td>";
-				echo "<td>$database_maintenance_enabled</td>";
-				echo "<td>$database_maintenance_retention</td>";
-				echo "<td>$filesystem_maintenance_enabled</td>";
-				echo "<td>$filesystem_maintenance_retention</td>";
-			echo "</tr>";
+				echo "<tr class='list-row' style=''>";
+					echo "<td class='checkbox'>";
+						echo "<input type='checkbox' name='maintenance_apps[$class]' id='checkbox_$x' value='$class' onclick=\"checkbox_on_change(this); if (!this.checked) { document.getElementById('checkbox_all').checked = false; }\">\n";
+//						echo "<input type='hidden' name='maintenance_apps[$class][class]' value='".escape($class)."' />\n";
+					echo "</td>";
+					echo "<td>$class</td>";
+					echo "<td ". ($installed=='No' ? "style=' background-color: var(--warning);'" : 'style=" background-color: none;"') .">$installed</td>";
+					echo "<td>$database_maintenance_enabled</td>";
+					echo "<td>$database_maintenance_retention</td>";
+					echo "<td>$filesystem_maintenance_enabled</td>";
+					echo "<td>$filesystem_maintenance_retention</td>";
+				echo "</tr>";
 			}
 		echo "</table>";
+		echo "<input type='hidden' name='".$token['name']."' value='".$token['hash']."'>\n";
 	echo "</form>";
 echo "</div>";
 
