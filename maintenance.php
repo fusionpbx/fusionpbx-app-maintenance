@@ -38,10 +38,6 @@ if (permission_exists('maintenance_view')) {
 	die('Unauthorized');
 }
 
-//token
-$object = new token;
-$token = $object->create($_SERVER['PHP_SELF']);
-
 if (!empty($_REQUEST['search'])) {
 	$search = $_REQUEST['search'];
 } else {
@@ -74,6 +70,7 @@ if (!empty($_REQUEST['action'])) {
 			break;
 	}
 	$toggle_maintenance_apps = $_REQUEST['toggle'];
+	unset($token);
 }
 
 //load the settings
@@ -109,7 +106,7 @@ $document['title'] = $text['title-maintenance'];
 	echo "<div class='actions'>";
 		//echo "<form method='post' id='frm'>";
 			//logs button
-			echo button::create(['type'=>'button','label'=>$text['button-logs'],'icon'=>'fas fa-scroll fa-fw','id'=>'btn_logs', 'link'=>'_self']);
+			echo button::create(['type'=>'button','label'=>$text['button-logs'],'icon'=>'fas fa-scroll fa-fw','id'=>'btn_logs', 'link'=>'maintenance_logs.php']);
 			//register button
 			echo button_toggle::create(['label'=>$text['button-register'],'icon'=>'fas fa-registered fa-fw']);
 			//search input box
@@ -163,7 +160,6 @@ $document['title'] = $text['title-maintenance'];
 				echo "<tr class='list-row' style=''>";
 					echo "<td class='checkbox'>";
 						echo "<input type='checkbox' name='maintenance_apps[$class]' id='checkbox_$x' value='$class' onclick=\"checkbox_on_change(this); if (!this.checked) { document.getElementById('checkbox_all').checked = false; }\">\n";
-//						echo "<input type='hidden' name='maintenance_apps[$class][class]' value='".escape($class)."' />\n";
 					echo "</td>";
 					echo "<td>$class</td>";
 					echo "<td ". ($installed=='No' ? "style=' background-color: var(--warning);'" : 'style=" background-color: none;"') .">$installed</td>";
