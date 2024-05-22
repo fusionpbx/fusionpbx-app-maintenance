@@ -64,8 +64,14 @@ if (!empty($_REQUEST['action'])) {
 	$checked_apps = $_REQUEST['maintenance_apps'] ?? [];
 	switch($action) {
 		case 'toggle':
-			if (maintenance::register_applications($database, $checked_apps)) {
-				message::add($text['message-toggle']);
+			if (permission_exists('maintenance_register')) {
+				if (maintenance::register_applications($database, $checked_apps)) {
+					message::add($text['message-toggle']);
+				} else {
+					message::add($text['message-register_failed'], 'negative');
+				}
+			} else {
+				message::add($text['message-action_prohibited'], 'negative');
 			}
 			break;
 	}
@@ -104,18 +110,16 @@ $document['title'] = $text['title-maintenance'];
 	echo "<div class='action_bar' id='action_bar'>";
 	echo "<div class='heading'><b>Maintenance (" . count($maintenance_classes) . ")</b></div>";
 	echo "<div class='actions'>";
-		//echo "<form method='post' id='frm'>";
-			//logs button
-			echo button::create(['type'=>'button','label'=>$text['button-logs'],'icon'=>'fas fa-scroll fa-fw','id'=>'btn_logs', 'link'=>'maintenance_logs.php']);
-			//register button
-			echo button_toggle::create(['label'=>$text['button-register'],'icon'=>'fas fa-registered fa-fw']);
-			//search input box
-			echo "<input type='text' class='txt list-search' name='search' id='search' value=\"".escape($search)."\" placeholder=\"".$text['label-search']."\" onkeydown=''>";
-			//search button
-			echo button_search::create(empty($search));
-			//reset button
-			echo button_reset::create(empty($search));
-		//echo "</form>";
+		//logs button
+		echo button::create(['type'=>'button','label'=>$text['button-logs'],'icon'=>'fas fa-scroll fa-fw','id'=>'btn_logs', 'link'=>'maintenance_logs.php']);
+		//register button
+		echo button_toggle::create(['label'=>$text['button-register'],'icon'=>'fas fa-registered fa-fw']);
+		//search input box
+		echo "<input type='text' class='txt list-search' name='search' id='search' value=\"".escape($search)."\" placeholder=\"".$text['label-search']."\" onkeydown=''>";
+		//search button
+		echo button_search::create(empty($search));
+		//reset button
+		echo button_reset::create(empty($search));
 	echo "</div>";
 
 	//javascript modal boxes
@@ -123,15 +127,15 @@ $document['title'] = $text['title-maintenance'];
 	echo modal_delete::create('form_list');
 	echo modal_toggle::create('form_list');
 
-	echo "<div style='clear: both;'></div>\n";
+	echo "<div style='clear: both;'></div>";
 	echo "<br/><br/>";
 	echo "<form id='form_list' method='post'>";
-		echo "<input type='hidden' id='action' name='action' value=''>\n";
-		echo "<input type='hidden' name='search' value=\"".escape($search)."\">\n";
+		echo "<input type='hidden' id='action' name='action' value=''>";
+		echo "<input type='hidden' name='search' value=\"".escape($search)."\">";
 		echo "<table class='list'>";
 			echo "<tr class='list-header'>";
 				echo "<th class='checkbox'>";
-					echo "<input type='checkbox' id='checkbox_all' name='checkbox_all' onclick='list_all_toggle(); checkbox_on_change(this);' ".(empty($maintenance_classes) ? "style='visibility: hidden;'" : null).">\n";
+					echo "<input type='checkbox' id='checkbox_all' name='checkbox_all' onclick='list_all_toggle(); checkbox_on_change(this);' ".(empty($maintenance_classes) ? "style='visibility: hidden;'" : null).">";
 				echo "</th>";
 				echo "<th>Name</th>";
 				echo "<th>Registered</th>";
@@ -159,7 +163,7 @@ $document['title'] = $text['title-maintenance'];
 
 				echo "<tr class='list-row' style=''>";
 					echo "<td class='checkbox'>";
-						echo "<input type='checkbox' name='maintenance_apps[$class]' id='checkbox_$x' value='$class' onclick=\"checkbox_on_change(this); if (!this.checked) { document.getElementById('checkbox_all').checked = false; }\">\n";
+						echo "<input type='checkbox' name='maintenance_apps[$class]' id='checkbox_$x' value='$class' onclick=\"checkbox_on_change(this); if (!this.checked) { document.getElementById('checkbox_all').checked = false; }\">";
 					echo "</td>";
 					echo "<td>$class</td>";
 					echo "<td ". ($installed=='No' ? "style=' background-color: var(--warning);'" : 'style=" background-color: none;"') .">$installed</td>";
@@ -170,9 +174,8 @@ $document['title'] = $text['title-maintenance'];
 				echo "</tr>";
 			}
 		echo "</table>";
-		echo "<input type='hidden' name='".$token['name']."' value='".$token['hash']."'>\n";
+		echo "<input type='hidden' name='".$token['name']."' value='".$token['hash']."'>";
 	echo "</form>";
 echo "</div>";
-
 
 require_once dirname(__DIR__, 2) . '/resources/footer.php';

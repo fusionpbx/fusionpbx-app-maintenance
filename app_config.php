@@ -60,6 +60,9 @@
 	$apps[$x]['permissions'][$y]['name'] = 'maintenance_view';
 	$apps[$x]['permissions'][$y]['groups'][] = 'superadmin';
 	$y++;
+	$apps[$x]['permissions'][$y]['name'] = 'maintenance_register';
+	$apps[$x]['permissions'][$y]['groups'][] = 'superadmin';
+	$y++;
 	$apps[$x]['permissions'][$y]['name'] = 'maintenance_log_view';
 	$apps[$x]['permissions'][$y]['groups'][] = 'superadmin';
 	$y++;

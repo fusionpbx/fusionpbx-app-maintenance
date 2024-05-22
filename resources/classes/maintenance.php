@@ -119,20 +119,6 @@ class maintenance {
 			}
 		}
 
-		//get the already registered applications from the global default settings table
-		$sql = "select default_setting_value"
-			. " from v_default_settings"
-			. " where default_setting_category = 'maintenance'"
-			. " and default_setting_subcategory = 'application'";
-
-		$result = $database->select($sql);
-		if (!empty($result)) {
-			$registered_applications = array_map(function ($row) { return $row['default_setting_value']; }, $result);
-		}
-		else {
-			$registered_applications = [];
-		}
-
 		//load all classes in the project
 		$class_files = glob(dirname(__DIR__, 2) . '/*/*/resources/classes/*.php');
 		foreach ($class_files as $file) {
@@ -162,6 +148,23 @@ class maintenance {
 
 	}
 
+	public static function get_registered_applications(database $database): array {
+		//get the already registered applications from the global default settings table
+		$sql = "select default_setting_value"
+			. " from v_default_settings"
+			. " where default_setting_category = 'maintenance'"
+			. " and default_setting_subcategory = 'application'";
+
+		$result = $database->select($sql);
+		if (!empty($result)) {
+			$registered_applications = array_map(function ($row) { return $row['default_setting_value']; }, $result);
+		}
+		else {
+			$registered_applications = [];
+		}
+		return $registered_applications;
+	}
+
 	/**
 	 * Registers the list of applications given in the $maintenance_apps array to the global default settings
 	 * @param database $database
@@ -174,12 +177,15 @@ class maintenance {
 			return false;
 		}
 
+		//query the database for the already registered applications
+		$registered_apps = self::get_registered_applications($database);
+
 		//register each app
 		$array = [];
 		$index = 0;
 		foreach ($maintenance_apps as $application) {
 			//format the array for what the database object needs for saving data in the global default settings
-			self::add_maintenance_app_to_array($application, $array, $index);
+			self::add_maintenance_app_to_array($registered_apps, $application, $array, $index);
 
 			//get the application settings from the class for database maintenance
 			self::add_database_maintenance_to_array($database, $application, $array, $index);
@@ -197,15 +203,17 @@ class maintenance {
 	}
 
 	//updates the array with a maintenance app using a format the database object save method can use
-	private static function add_maintenance_app_to_array($application, &$array, &$index) {
-		$array['default_settings'][$index]['default_setting_uuid'] = uuid();
-		$array['default_settings'][$index]['default_setting_category'] = 'maintenance';
-		$array['default_settings'][$index]['default_setting_subcategory'] = 'application';
-		$array['default_settings'][$index]['default_setting_name'] = 'array';
-		$array['default_settings'][$index]['default_setting_value'] = $application;
-		$array['default_settings'][$index]['default_setting_enabled'] = 'true';
-		$array['default_settings'][$index]['default_setting_description'] = '';
-		$index++;
+	private static function add_maintenance_app_to_array(&$registered_applications, $application, &$array, &$index) {
+		if (!in_array($application, $registered_applications)) {
+			$array['default_settings'][$index]['default_setting_uuid'] = uuid();
+			$array['default_settings'][$index]['default_setting_category'] = 'maintenance';
+			$array['default_settings'][$index]['default_setting_subcategory'] = 'application';
+			$array['default_settings'][$index]['default_setting_name'] = 'array';
+			$array['default_settings'][$index]['default_setting_value'] = $application;
+			$array['default_settings'][$index]['default_setting_enabled'] = 'true';
+			$array['default_settings'][$index]['default_setting_description'] = '';
+			$index++;
+		}
 	}
 
 	//updates the array with a database maintenance app using a format the database object save method can use
