@@ -86,6 +86,15 @@
 	$apps[$x]['db'][$table_index]['fields'][$field_index]['key']['type'] = 'primary';
 	$apps[$x]['db'][$table_index]['fields'][$field_index]['description']['en-us'] = "";
 	$field_index++;
+	$apps[$x]['db'][$table_index]['fields'][$field_index]['name'] = "domain_uuid";
+	$apps[$x]['db'][$table_index]['fields'][$field_index]['type']['pgsql'] = "uuid";
+	$apps[$x]['db'][$table_index]['fields'][$field_index]['type']['sqlite'] = "text";
+	$apps[$x]['db'][$table_index]['fields'][$field_index]['type']['mysql'] = "char(36)";
+	$apps[$x]['db'][$table_index]['fields'][$field_index]['key']['type'] = "foreign";
+	$apps[$x]['db'][$table_index]['fields'][$field_index]['key']['reference']['table'] = "v_domains";
+	$apps[$x]['db'][$table_index]['fields'][$field_index]['key']['reference']['field'] = "domain_uuid";
+	$apps[$x]['db'][$table_index]['fields'][$field_index]['description']['en-us'] = "";
+	$field_index++;
 	$apps[$x]['db'][$table_index]['fields'][$field_index]['name'] = 'maintenance_log_application';
 	$apps[$x]['db'][$table_index]['fields'][$field_index]['type'] = 'text';
 	$apps[$x]['db'][$table_index]['fields'][$field_index]['search_by'] = '1';
