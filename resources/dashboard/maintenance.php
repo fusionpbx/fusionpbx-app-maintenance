@@ -145,24 +145,26 @@
 //check the running maintenance apps
 	$maintainers = $setting->get('maintenance', 'application', []);
 
+//sort the applications
+	array_multisort($maintainers);
+
 //count the number of apps enabled
 	foreach ($maintainers as $maintenance_app) {
 		if (class_exists($maintenance_app)) {
-			$app = new $maintenance_app($database, $setting);
 			//check for database status
-			if (has_trait($app, 'database_maintenance')) {
+			if (has_trait($maintenance_app, 'database_maintenance')) {
 				$total_maintenance_apps++;
-				$category = $app::$database_retention_category;
-				$subcategory = $app::$database_retention_subcategory;
+				$category = $maintenance_app::$database_retention_category;
+				$subcategory = $maintenance_app::$database_retention_subcategory;
 				if (!empty($setting->get($category, $subcategory, ''))) {
 					$total_running_maintenance_apps++;
 				}
 			}
 			//check for filesystem status
-			if (has_trait($app, 'filesystem_maintenance')) {
+			if (has_trait($maintenance_app, 'filesystem_maintenance')) {
 				$total_maintenance_apps++;
-				$category = $app::$filesystem_retention_category;
-				$subcategory = $app::$filesystem_retention_subcategory;
+				$category = $maintenance_app::$filesystem_retention_category;
+				$subcategory = $maintenance_app::$filesystem_retention_subcategory;
 				if(!empty($setting->get($category, $subcategory, ''))) {
 					$total_running_maintenance_apps++;
 				}
