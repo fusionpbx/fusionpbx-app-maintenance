@@ -1,7 +1,5 @@
 # Maintenance Service
 
-***
-
 ## Developer and Novice Friendly
 Specifically created with both developers and novice users in mind. Allowing for
 seemless integration in to an extended project or a basic installation
