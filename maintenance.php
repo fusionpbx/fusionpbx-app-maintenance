@@ -48,8 +48,8 @@ if (!empty($_REQUEST['search'])) {
 $language = new text;
 $text = $language->get();
 
-//create a new settings object ignoring the current domain
-$database = new database();
+//create a database object
+$database = database::new();
 
 //process registering maintenance applications
 if (!empty($_REQUEST['action'])) {
@@ -64,7 +64,7 @@ if (!empty($_REQUEST['action'])) {
 	$checked_apps = $_REQUEST['maintenance_apps'] ?? [];
 	switch($action) {
 		case 'toggle':
-			if (permission_exists('maintenance_register')) {
+			if (permission_exists('maintenance_edit')) {
 				if (maintenance::register_applications($database, $checked_apps)) {
 					message::add($text['message-toggle']);
 				} else {
@@ -110,15 +110,10 @@ $document['title'] = $text['title-maintenance'];
 	echo "<div class='action_bar' id='action_bar'>";
 	echo "<div class='heading'><b>Maintenance (" . count($maintenance_classes) . ")</b></div>";
 	echo "<div class='actions'>";
-		//logs button
 		echo button::create(['type'=>'button','label'=>$text['button-logs'],'icon'=>'fas fa-scroll fa-fw','id'=>'btn_logs', 'link'=>'maintenance_logs.php']);
-		//register button
 		echo button_toggle::create(['label'=>$text['button-register'],'icon'=>'fas fa-registered fa-fw']);
-		//search input box
 		echo "<input type='text' class='txt list-search' name='search' id='search' value=\"".escape($search)."\" placeholder=\"".$text['label-search']."\" onkeydown=''>";
-		//search button
 		echo button_search::create(empty($search));
-		//reset button
 		echo button_reset::create(empty($search));
 	echo "</div>";
 

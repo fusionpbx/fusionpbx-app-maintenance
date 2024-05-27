@@ -156,7 +156,7 @@
 	$apps[$x]['default_settings'][$y]['default_setting_description'] = "Number of seconds to wait before testing for the execute time.";
 	$y++;
 	$apps[$x]['default_settings'][$y]['default_setting_uuid'] = "13c9211f-fa66-4255-86dc-bd73094a8f52";
-	$apps[$x]['default_settings'][$y]['default_setting_category'] = "maintenance";
+	$apps[$x]['default_settings'][$y]['default_setting_category'] = "maintenance_logs";
 	$apps[$x]['default_settings'][$y]['default_setting_subcategory'] = "database_retention_days";
 	$apps[$x]['default_settings'][$y]['default_setting_name'] = "numeric";
 	$apps[$x]['default_settings'][$y]['default_setting_value'] = "30";

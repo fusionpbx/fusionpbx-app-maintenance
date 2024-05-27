@@ -27,14 +27,20 @@
  */
 
 if ($domains_processed == 1) {
-	//use global config and database objects if available
-	global $config, $database;
-	if ($config === null) {
-		$config = new config();
-	}
-	if ($database === null) {
-		$database = new database(['config' => $config]);
-	}
+	if (class_exists('framework')) {
+		//use global config and database objects if available
+		maintenance::app_defaults(framework::database());
+	} else {
+		global $database;
+		if ($database === null) {
+			$database = database::new();
+		}
 
-	maintenance::app_defaults($database);
+		//set the app information for database accounting
+		$database->app_name = maintenance::APP_NAME;
+		$database->app_uuid = maintenance::APP_UUID;
+
+		//maintenance class handles setting app defaults
+		maintenance::app_defaults($database);
+	}
 }

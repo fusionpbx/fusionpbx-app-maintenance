@@ -126,7 +126,7 @@ class maintenance {
 			require_once $file;
 		}
 
-		//get the loaded declared classes in an array
+		//get the loaded declared classes in an array from the php engine
 		$declared_classes = get_declared_classes();
 
 		//initialize the array
@@ -144,6 +144,12 @@ class maintenance {
 		//check if we have to add classes not already in default settings
 		if (count($found_applications) > 0) {
 			self::register_applications($database, $found_applications);
+		}
+
+		//check the type of chart and make sure that it has 'none' as default
+		$result = $database->select("select dashboard_chart_type from v_dashboard where dashboard_name='Maintenance'", null, 'column');
+		if ($result !== 'none' || $result !== 'doughnut') {
+			$database->execute("update v_dashboard set dashboard_chart_type='none' where dashboard_name='Maintenance'");
 		}
 
 	}
@@ -181,22 +187,22 @@ class maintenance {
 		$registered_apps = self::get_registered_applications($database);
 
 		//register each app
-		$array = [];
+		$new_maintenance_apps = [];
 		$index = 0;
 		foreach ($maintenance_apps as $application) {
 			//format the array for what the database object needs for saving data in the global default settings
-			self::add_maintenance_app_to_array($registered_apps, $application, $array, $index);
+			self::add_maintenance_app_to_array($registered_apps, $application, $new_maintenance_apps, $index);
 
 			//get the application settings from the class for database maintenance
-			self::add_database_maintenance_to_array($database, $application, $array, $index);
+			self::add_database_maintenance_to_array($database, $application, $new_maintenance_apps, $index);
 
 			//get the application settings from the class for filesystem maintenance
-			self::add_filesystem_maintenance_to_array($database, $application, $array, $index);
+			self::add_filesystem_maintenance_to_array($database, $application, $new_maintenance_apps, $index);
 		}
-		if (count($array) > 0) {
+		if (count($new_maintenance_apps) > 0) {
 			$database->app_name = self::APP_NAME;
 			$database->app_uuid = self::APP_UUID;
-			$database->save($array);
+			$database->save($new_maintenance_apps);
 			return true;
 		}
 		return false;
