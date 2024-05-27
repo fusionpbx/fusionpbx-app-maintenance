@@ -296,8 +296,8 @@ echo "<form id='form_list' method='post'>\n";
 	echo "</table>\n";
 	echo "<br />\n";
 	echo "<div align='center'>".$paging_controls."</div>\n";
-	echo new token;
-	//echo "<input type='hidden' name='".$token_arr['name']."' value='".$token_arr['hash']."'>\n";
+	//echo new token;
+	echo "<input type='hidden' name='".$token_arr['name']."' value='".$token_arr['hash']."'>\n";
 echo "</form>\n";
 
 //include the footer
