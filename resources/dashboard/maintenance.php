@@ -38,8 +38,11 @@
 
 //connect to the database
 	if (!isset($database)) {
-		$database = new database;
+		$database = database::new();
 	}
+
+//create a token
+	$token = (new token())->create($_SERVER['PHP_SELF']);
 
 //check permisions
 	require_once dirname(__DIR__, 4) . "/resources/check_auth.php";
@@ -258,6 +261,9 @@ if (true) {
 								} else {
 									$filesystem_checkbox_state = CHECKBOX_CHECKED;
 								}
+							} else {
+								$filesystem_setting_uuid = '';
+								$filesystem_setting_table = '';
 							}
 						}
 
@@ -301,7 +307,7 @@ if (true) {
 								}
 								//check for permission
 								if (permission_exists('maintenance_edit')) {
-									echo "<input class='formfld' style='width: 20%; min-width: 40px;$database_input_days_style' type='text' name='database_retention_days[$x][days]' id='database_days_$x' placeholder='days' maxlength='255' value='$database_days'>";
+									echo "<input class='formfld' style='width: 20%; min-width: 40px;$database_input_days_style' type='text' name='database_retention_days[$x][days]' id='database_days_$x' placeholder='days' maxlength='255' value='" . ($database_checkbox_state === CHECKBOX_CHECKED ? $database_days : $database_default_value) . "'>";
 									echo "<input type='hidden' id='database_uuid_$x' name='database_retention_days[$x][uuid]' value='$database_setting_uuid'>";
 									echo "<input type='hidden' id='database_category_$x' name='database_retention_days[$x][category]' value='$database_category'>";
 									echo "<input type='hidden' id='database_subcategory_$x' name='database_retention_days[$x][subcategory]' value='$database_subcategory'>";
