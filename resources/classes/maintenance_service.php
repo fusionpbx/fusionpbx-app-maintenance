@@ -95,9 +95,9 @@ class maintenance_service extends service {
 	 * @param array $help_options
 	 */
 	#[\Override]
-	protected static function set_cli_options() {
+	protected static function set_command_options() {
 		//add a new command line option
-		self::append_cli_option(cli_option::new()
+		self::append_command_option(command_option::new()
 				->short_option('i')
 				->long_option('immediate')
 				->description('Launch maintenance services immediately on startup')
