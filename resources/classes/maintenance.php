@@ -60,28 +60,54 @@ class maintenance {
 	 */
 	private $settings;
 
+	/**
+	 * Constructs a maintenance object
+	 * <p>Each parameter is checked to ensure it is a valid object matching the expected type of object needed.</p>
+	 * <p>Valid values:<br>
+	 * <ul>
+	 *   <li>config - must be a valid config object or one will be created
+	 *   <li>database - must be a valid database object or one will be created
+	 *   <li>settings - must be a valid settings object or one will be created
+	 * </ul>
+	 * </p>
+	 * @param array $params Key/value pairs of object class name and the object
+	 */
 	public function __construct(array $params = []) {
-		if (!empty($params['config'])) {
+		//try to use config object passed in the constructor
+		if (!empty($params['config']) && $params['config'] instanceof config) {
 			$this->config = $params['config'];
 		} else {
-			//try global variable config before loading new one
-			global $config;
-			if (isset($config)) {
-				$this->config = $config;
+			//check for the config object to be defined in the global scope
+			if (isset($GLOBALS['config']) && $GLOBALS['config'] instanceof config) {
+				$this->config = $GLOBALS['config'];
 			} else {
+				//fallback to creating our own object
 				$this->config = new config();
 			}
 		}
-		if (!empty($params['database'])) {
+		//try to use database object passed in the constructor
+		if (!empty($params['database']) && $params['database'] instanceof database) {
 			$this->database = $params['database'];
 		} else {
-			$this->database = new database(['config' => $this->config]);
+			//check for the database object defined in the global scope
+			if (isset($GLOBALS['database']) && $GLOBALS['database'] instanceof database) {
+				$this->database = $GLOBALS['database'];
+			} else {
+				//fallback to creating our own object
+				$this->database = new database(['config' => $this->config]);
+			}
 		}
-		if (!empty($params['settings'])) {
+		//try to use settings object passed in the constructor
+		if (!empty($params['settings']) && $params['settings'] instanceof settings) {
 			$this->settings = $params['settings'];
 		} else {
-			$this->settings = new settings(['database' => $this->database]);
+			if (isset($GLOBALS['settings']) && $GLOBALS['settings'] instanceof settings) {
+				$this->settings = $GLOBALS['settings'];
+			} else {
+				$this->settings = new settings(['database' => $this->database]);
+			}
 		}
+		//set the database object to remember this app for any transactions
 		$this->database->app_name = self::APP_NAME;
 		$this->database->app_uuid = self::APP_UUID;
 	}
@@ -106,8 +132,11 @@ class maintenance {
 	}
 
 	/**
-	 * Update the default settings to reflect all classes implementing the maintenance interfaces in the project
+	 * Update the default settings to reflect all classes implementing the maintenance traits in the project
+	 * <p>This is called when the <i>App Defaults</i> is executed either from the command line or the web
+	 * user interface.</p>
 	 * @param database $database
+	 * @access public
 	 */
 	public static function app_defaults(database $database) {
 		//require the maintenance functions for processing traits
@@ -154,6 +183,12 @@ class maintenance {
 
 	}
 
+	/**
+	 * Returns a list of maintenance applications already in the default settings table ignoring default_setting_enabled
+	 * @param database $database
+	 * @return array
+	 * @access public
+	 */
 	public static function get_registered_applications(database $database): array {
 		//get the already registered applications from the global default settings table
 		$sql = "select default_setting_value"
@@ -176,6 +211,7 @@ class maintenance {
 	 * @param database $database
 	 * @param array $maintenance_apps
 	 * @return bool
+	 * @access public
 	 */
 	public static function register_applications(database $database, array $maintenance_apps): bool {
 		//make sure there is something to do
@@ -186,6 +222,9 @@ class maintenance {
 		//query the database for the already registered applications
 		$registered_apps = self::get_registered_applications($database);
 
+		//load the text for the description
+		$text = (new text())->get();
+
 		//register each app
 		$new_maintenance_apps = [];
 		$index = 0;
@@ -194,10 +233,10 @@ class maintenance {
 			self::add_maintenance_app_to_array($registered_apps, $application, $new_maintenance_apps, $index);
 
 			//get the application settings from the class for database maintenance
-			self::add_database_maintenance_to_array($database, $application, $new_maintenance_apps, $index);
+			self::add_database_maintenance_to_array($database, $application, $text['description-retention_days'], $new_maintenance_apps, $index);
 
 			//get the application settings from the class for filesystem maintenance
-			self::add_filesystem_maintenance_to_array($database, $application, $new_maintenance_apps, $index);
+			self::add_filesystem_maintenance_to_array($database, $application, $text['description-retention_days'], $new_maintenance_apps, $index);
 		}
 		if (count($new_maintenance_apps) > 0) {
 			$database->app_name = self::APP_NAME;
@@ -208,8 +247,17 @@ class maintenance {
 		return false;
 	}
 
-	//updates the array with a maintenance app using a format the database object save method can use
+	/**
+	 * updates the array with a maintenance app using a format the database object save method can use to save in the default settings
+	 * default settings category: maintenance, subcategory: application, value: name of new application
+	 * @param array $registered_applications List of already registered applications
+	 * @param string $application Application class name
+	 * @param array $array Array in a format ready to use for the database save method
+	 * @param int $index Index pointing to the location to save within $array
+	 * @access private
+	 */
 	private static function add_maintenance_app_to_array(&$registered_applications, $application, &$array, &$index) {
+		//verify that the application we need to add is not already listed in the registered applications array
 		if (!in_array($application, $registered_applications)) {
 			$array['default_settings'][$index]['default_setting_uuid'] = uuid();
 			$array['default_settings'][$index]['default_setting_category'] = 'maintenance';
@@ -222,13 +270,28 @@ class maintenance {
 		}
 	}
 
-	//updates the array with a database maintenance app using a format the database object save method can use
-	private static function add_database_maintenance_to_array($database, $application, &$array, &$index) {
+	/**
+	 * Updates the array with a database maintenance app using a format the database object save method can use in default settings table
+	 * <p><b>default setting category</b>: class name that has the <code>use database_maintenance;</code> statement<br>
+	 * <b>default setting subcategory</b>: "database_retention_days"<br>
+	 * <b>default setting value</b>: "30" (The class can override this setting to a custom value)<br>
+	 * <b>description</b>: "Number of days the maintenance application will keep the information."<br>
+	 * </p>
+	 * @param database $database Database object
+	 * @param string $application Application class name
+	 * @param string $description Description to be added in to the default settings table
+	 * @param array $array Array formatted for use in the database save method
+	 * @param int $index Index pointer to the save location in $array
+	 * @access private
+	 */
+	private static function add_database_maintenance_to_array($database, $application, $description, &$array, &$index) {
 		//get the application settings from the object for database maintenance
 		if (has_trait($application, 'database_maintenance')) {
+			//the trait has this value defined
 			$category = $application::$database_retention_category;
+			//the trait has this value defined
 			$subcategory = $application::$database_retention_subcategory;
-			//check if the default setting already exists in global settings
+			//check if the default setting already exists in global default settings table
 			$uuid = self::default_setting_uuid($database, $category, $subcategory);
 			if (empty($uuid)) {
 				//does not exist so create it
@@ -238,7 +301,7 @@ class maintenance {
 				$array['default_settings'][$index]['default_setting_name'] = 'numeric';
 				$array['default_settings'][$index]['default_setting_value'] = $application::database_retention_default_value();
 				$array['default_settings'][$index]['default_setting_enabled'] = 'true';
-				$array['default_settings'][$index]['default_setting_description'] = '';
+				$array['default_settings'][$index]['default_setting_description'] = $description;
 				$index++;
 			} else {
 				//already exists
@@ -246,10 +309,25 @@ class maintenance {
 		}
 	}
 
-	//updates the array with a filesystem maintenance app using a format the database object save method can use
-	private static function add_filesystem_maintenance_to_array($database, $application, &$array, &$index) {
+	/**
+	 * Updates the array with a file system maintenance app using a format the database object save method can use in default settings table
+	 * <p><b>default setting category:</b> class name that has the <code>use filesystem_maintenance;</code> statement<br>
+	 * <b>default setting subcategory:</b> "filesystem_retention_days"<br>
+	 * <b>default setting value:</b> "30" (The class can override this setting to a custom value)<br>
+	 * <b>description:</b> "Number of days the maintenance application will keep the information."<br>
+	 * </p>
+	 * @param database $database Database object
+	 * @param string $application Application class name
+	 * @param string $description Description to be added in to the default settings table
+	 * @param array $array Array formatted for use in the database save method
+	 * @param int $index Index pointer to the save location in $array
+	 * @access private
+	 */
+	private static function add_filesystem_maintenance_to_array($database, $application, $description, &$array, &$index) {
 		if (has_trait($application, 'filesystem_maintenance')) {
+			//the trait has this value defined
 			$category = $application::$filesystem_retention_category;
+			//the trait has this value defined
 			$subcategory = $application::$filesystem_retention_subcategory;
 			//check if the default setting already exists in global settings
 			$uuid = self::default_setting_uuid($database, $category, $subcategory);
@@ -260,7 +338,7 @@ class maintenance {
 				$array['default_settings'][$index]['default_setting_name'] = 'numeric';
 				$array['default_settings'][$index]['default_setting_value'] = $application::filesystem_retention_default_value();
 				$array['default_settings'][$index]['default_setting_enabled'] = 'true';
-				$array['default_settings'][$index]['default_setting_description'] = '';
+				$array['default_settings'][$index]['default_setting_description'] = $description;
 				$index++;
 			}
 		}
