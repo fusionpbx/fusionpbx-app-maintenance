@@ -77,35 +77,21 @@ class maintenance {
 		if (!empty($params['config']) && $params['config'] instanceof config) {
 			$this->config = $params['config'];
 		} else {
-			//check for the config object to be defined in the global scope
-			if (isset($GLOBALS['config']) && $GLOBALS['config'] instanceof config) {
-				$this->config = $GLOBALS['config'];
-			} else {
-				//fallback to creating our own object
-				$this->config = new config();
-			}
+			//fallback to creating our own object
+			$this->config = new config();
 		}
 		//try to use database object passed in the constructor
 		if (!empty($params['database']) && $params['database'] instanceof database) {
 			$this->database = $params['database'];
 		} else {
-			//check for the database object defined in the global scope
-			if (isset($GLOBALS['database']) && $GLOBALS['database'] instanceof database) {
-				$this->database = $GLOBALS['database'];
-			} else {
-				//fallback to creating our own object
-				$this->database = new database(['config' => $this->config]);
-			}
+			//fallback to creating our own object
+			$this->database = new database(['config' => $this->config]);
 		}
 		//try to use settings object passed in the constructor
 		if (!empty($params['settings']) && $params['settings'] instanceof settings) {
 			$this->settings = $params['settings'];
 		} else {
-			if (isset($GLOBALS['settings']) && $GLOBALS['settings'] instanceof settings) {
-				$this->settings = $GLOBALS['settings'];
-			} else {
-				$this->settings = new settings(['database' => $this->database]);
-			}
+			$this->settings = new settings(['database' => $this->database]);
 		}
 		//set the database object to remember this app for any transactions
 		$this->database->app_name = self::APP_NAME;
