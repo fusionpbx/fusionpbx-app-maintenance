@@ -298,14 +298,14 @@ class maintenance {
 		$registered_apps = self::get_registered_applications($database);
 
 		//load the text for the description
-		$text = (new text())->get();
+		$text = (new text())->get(null, 'app/' . __CLASS__);
 
 		//register each app
 		$new_maintenance_apps = [];
 		$index = 0;
 		foreach ($maintenance_apps as $application) {
 			//format the array for what the database object needs for saving data in the global default settings
-			self::add_maintenance_app_to_array($registered_apps, $application, $new_maintenance_apps, $index);
+			self::add_maintenance_app_to_array($registered_apps, $application, $text['description-default_settings_app'], $new_maintenance_apps, $index);
 
 			//get the application settings from the class for database maintenance
 			self::add_database_maintenance_to_array($database, $application, $text['description-retention_days'], $new_maintenance_apps, $index);
@@ -331,7 +331,7 @@ class maintenance {
 	 * @param int $index Index pointing to the location to save within $array
 	 * @access private
 	 */
-	private static function add_maintenance_app_to_array(&$registered_applications, $application, &$array, &$index) {
+	private static function add_maintenance_app_to_array(&$registered_applications, $application, $description, &$array, &$index) {
 		//verify that the application we need to add is not already listed in the registered applications array
 		if (!in_array($application, $registered_applications)) {
 			$array['default_settings'][$index]['default_setting_uuid'] = uuid();
@@ -340,7 +340,7 @@ class maintenance {
 			$array['default_settings'][$index]['default_setting_name'] = 'array';
 			$array['default_settings'][$index]['default_setting_value'] = $application;
 			$array['default_settings'][$index]['default_setting_enabled'] = 'true';
-			$array['default_settings'][$index]['default_setting_description'] = '';
+			$array['default_settings'][$index]['default_setting_description'] = $description;
 			$index++;
 		}
 	}
