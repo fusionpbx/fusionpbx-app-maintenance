@@ -1,5 +1,5 @@
 <?php
-
+declare(strict_types=1);
 /*
  * FusionPBX
  * Version: MPL 1.1
@@ -80,22 +80,43 @@ if (!empty($_REQUEST['action'])) {
 }
 
 //load the settings
-$settings = new settings(['database' => $database]);
-
-//load all classes
-$class_files = glob(dirname(__DIR__, 2) . '/*/*/resources/classes/*');
-foreach ($class_files as $file) {
-	include_once $file;
-}
-
-//get the current list of all database and filesystem maintenance classes
-$maintenance_classes = trait_classes_arr('database_maintenance', 'filesystem_maintenance');
+$default_settings = new settings(['database' => $database]);
 
 //get the list in the default settings
-$default_settings_classes = $settings->get('maintenance', 'application', []);
+$classes = $default_settings->get('maintenance', 'application', []);
 
-//compare to the installed list
-$difference = array_diff($maintenance_classes, $default_settings_classes);
+//get the display array
+$maintenance_apps = [];
+
+//get all domains if the user has the permission to see them
+if (permission_exists('maintenance_show_all')) {
+	foreach ($classes as $class) {
+		if (has_trait($class, 'database_maintenance')) {
+			$maintenance_apps[$class]['database_maintenance'] = $class::database_maintenance_settings($database);
+		}
+		if (has_trait($class, 'filesystem_maintenance')) {
+			$maintenance_apps[$class]['filesystem_maintenance'] = $class::filesystem_maintenance_settings($database);
+		}
+	}
+}
+else {
+	$domain_uuid = $_SESSION['domain_uuid'];
+	$domain_settings = new settings(['domain_uuid' => $domain_uuid]);
+	//get only the local domain values
+	foreach ($classes as $class) {
+		if (has_trait($class, 'database_maintenance')) {
+			$maintenance_apps[$class]['database_maintenance'][$domain_uuid]['domain_setting_value'] = $domain_settings->get($class, $class::database_retention_subcategory());
+			$maintenance_apps[$class]['database_maintenance'][$domain_uuid]['domain_setting_enabled'] = true;
+		}
+		if (has_trait($class, 'filesystem_maintenance')) {
+			$maintenance_apps[$class]['filesystem_maintenance'][$domain_uuid]['domain_setting_value'] = $domain_settings->get($class, $class::filesystem_retention_subcategory());
+			$maintenance_apps[$class]['filesystem_maintenance'][$domain_uuid]['domain_setting_enabled'] = true;
+		}
+	}
+}
+
+//get the list of domains
+$domain_names = maintenance::get_domain_names($database);
 
 //create the token
 $object = new token;
@@ -106,12 +127,12 @@ require_once dirname(__DIR__, 2) . '/resources/header.php';
 //show the content
 $document['title'] = $text['title-maintenance'];
 
-
 	echo "<div class='action_bar' id='action_bar'>";
-	echo "<div class='heading'><b>Maintenance (" . count($maintenance_classes) . ")</b></div>";
+	echo "<div class='heading'><b>Maintenance (" . count($classes) . ")</b></div>";
 	echo "<div class='actions'>";
 		echo button::create(['type'=>'button','label'=>$text['button-logs'],'icon'=>'fas fa-scroll fa-fw','id'=>'btn_logs', 'link'=>'maintenance_logs.php']);
 		echo button_toggle::create(['label'=>$text['button-register'],'icon'=>'fas fa-registered fa-fw']);
+		echo button_show_all::create();
 		echo "<input type='text' class='txt list-search' name='search' id='search' value=\"".escape($search)."\" placeholder=\"".$text['label-search']."\" onkeydown=''>";
 		echo button_search::create(empty($search));
 		echo button_reset::create(empty($search));
@@ -129,44 +150,83 @@ $document['title'] = $text['title-maintenance'];
 		echo "<input type='hidden' name='search' value=\"".escape($search)."\">";
 		echo "<table class='list'>";
 			echo "<tr class='list-header'>";
-				echo "<th class='checkbox'>";
-					echo "<input type='checkbox' id='checkbox_all' name='checkbox_all' onclick='list_all_toggle(); checkbox_on_change(this);' ".(empty($maintenance_classes) ? "style='visibility: hidden;'" : null).">";
-				echo "</th>";
 				echo "<th>Name</th>";
-				echo "<th>Registered</th>";
+				if (permission_exists('maintenance_show_all')) {
+					echo "<th>Domain</th>";
+				}
 				echo "<th>Database Enabled</th>";
 				echo "<th>Retention Days</th>";
 				echo "<th>File System Enabled</th>";
 				echo "<th>Retention Days</th>";
 			echo "</tr>";
-			foreach ($maintenance_classes as $x => $class) {
-				$installed = array_search($class, $difference) ? 'No' : 'Yes';
-				if (has_trait($class, 'database_maintenance')) {
-					$database_maintenance_retention = $settings->get($class::$database_retention_category, $class::$database_retention_subcategory, '');
-					$database_maintenance_enabled = empty($database_maintenance_retention) ? "No" : "Yes";
-				} else {
-					$database_maintenance_enabled = "";
-					$database_maintenance_retention = "";
+			//list all maintenance applications from the defaults settings for global and each domain and show if they are enabled or disabled
+			foreach ($maintenance_apps as $class => $app_settings) {
+				//make the class name more user friendly
+				$display_name = ucwords(str_replace('_', ' ', $class));
+				//display global first
+				if ((isset($app_settings['database_maintenance']['global']) || isset($app_settings['filesystem_maintenance']['global'])) && permission_exists('maintenance_show_all')) {
+					echo "<tr class='list-row' style=''>";
+						echo "<td>$display_name</td>";
+							echo "<td>" . $text['label-global'] . "</td>";
+						if (isset($app_settings['database_maintenance']['global'])) {
+							$enabled = $app_settings['database_maintenance']['global']['default_setting_enabled'] ? $text['label-yes'] : $text['label-no'];
+							$value = $app_settings['database_maintenance']['global']['default_setting_value'];
+							echo "<td>$enabled</td>";
+							echo "<td>$value</td>";
+						} else {
+							echo "<td>&nbsp;</td>";
+							echo "<td>&nbsp;</td>";
+						}
+						if (isset($app_settings['filesystem_maintenance']['global'])) {
+							$enabled = $app_settings['filesystem_maintenance']['global']['default_setting_enabled'] ? $text['label-yes'] : $text['label-no'];
+							$value = $app_settings['filesystem_maintenance']['global']['default_setting_value'];
+							echo "<td>$enabled</td>";
+							echo "<td>$value</td>";
+						} else {
+							echo "<td>&nbsp;</td>";
+							echo "<td>&nbsp;</td>";
+						}
+					echo "</tr>";
 				}
-				if (has_trait($class, 'filesystem_maintenance') ) {
-					$filesystem_maintenance_retention = $settings->get($class::$filesystem_retention_category, $class::$filesystem_retention_subcategory, '');
-					$filesystem_maintenance_enabled = empty($filesystem_maintenance_retention) ? "No" : "Yes";
-				} else {
-					$filesystem_maintenance_enabled = "";
-					$filesystem_maintenance_retention = "";
+				if (isset($app_settings['database_maintenance']) || isset($app_settings['filesystem_maintenance'])) {
+					//get all domains with database traits
+					$database_domain_uuids = array_keys($app_settings['database_maintenance'] ?? []);
+					//get all domains with filesystem traits
+					$filesystem_domain_uuids = array_keys($app_settings['filesystem_maintenance'] ?? []);
+					//combine database and filesystem domain_uuids without duplicates
+					$domain_uuids = $database_domain_uuids + $filesystem_domain_uuids;
+					//loop through domains that have the database and filesystem traits
+					foreach ($domain_uuids as $domain_uuid) {
+						//skip global it has already been done
+						if ($domain_uuid === 'global') {
+							continue;
+						}
+						echo "<tr class='list-row' style=''>";
+							echo "<td>$display_name</td>";
+							if (permission_exists('maintenance_show_all')) {
+								echo "<td>" . $domain_names[$domain_uuid] . "</td>";
+							}
+							if (isset($app_settings['database_maintenance'][$domain_uuid])) {
+								$enabled = $app_settings['database_maintenance'][$domain_uuid]['domain_setting_enabled'] ? $text['label-yes'] : $text['label-no'];
+								$value = $app_settings['database_maintenance'][$domain_uuid]['domain_setting_value'];
+								echo "<td>$enabled</td>";
+								echo "<td>$value</td>";
+							} else {
+								echo "<td>&nbsp;</td>";
+								echo "<td>&nbsp;</td>";
+							}
+							if (isset($app_settings['filesystem_maintenance'][$domain_uuid])) {
+								$enabled = $app_settings['filesystem_maintenance'][$domain_uuid]['domain_setting_enabled'] ? $text['label-yes'] : $text['label-no'];
+								$value = $app_settings['filesystem_maintenance'][$domain_uuid]['domain_setting_value'];
+								echo "<td>$enabled</td>";
+								echo "<td>$value</td>";
+							} else {
+								echo "<td>&nbsp;</td>";
+								echo "<td>&nbsp;</td>";
+							}
+						echo "</tr>";
+					}
 				}
-
-				echo "<tr class='list-row' style=''>";
-					echo "<td class='checkbox'>";
-						echo "<input type='checkbox' name='maintenance_apps[$class]' id='checkbox_$x' value='$class' onclick=\"checkbox_on_change(this); if (!this.checked) { document.getElementById('checkbox_all').checked = false; }\">";
-					echo "</td>";
-					echo "<td>$class</td>";
-					echo "<td ". ($installed=='No' ? "style=' background-color: var(--warning);'" : 'style=" background-color: none;"') .">$installed</td>";
-					echo "<td>$database_maintenance_enabled</td>";
-					echo "<td>$database_maintenance_retention</td>";
-					echo "<td>$filesystem_maintenance_enabled</td>";
-					echo "<td>$filesystem_maintenance_retention</td>";
-				echo "</tr>";
 			}
 		echo "</table>";
 		echo "<input type='hidden' name='".$token['name']."' value='".$token['hash']."'>";

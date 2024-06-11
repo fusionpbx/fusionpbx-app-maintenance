@@ -157,8 +157,8 @@
 			//check for database status
 			if (has_trait($maintenance_app, 'database_maintenance')) {
 				$total_maintenance_apps++;
-				$category = $maintenance_app::$database_retention_category;
-				$subcategory = $maintenance_app::$database_retention_subcategory;
+				$category = $maintenance_app::database_retention_category();
+				$subcategory = $maintenance_app::database_retention_subcategory();
 				if (!empty($setting->get($category, $subcategory, ''))) {
 					$total_running_maintenance_apps++;
 				}
@@ -166,8 +166,8 @@
 			//check for filesystem status
 			if (has_trait($maintenance_app, 'filesystem_maintenance')) {
 				$total_maintenance_apps++;
-				$category = $maintenance_app::$filesystem_retention_category;
-				$subcategory = $maintenance_app::$filesystem_retention_subcategory;
+				$category = $maintenance_app::filesystem_retention_category();
+				$subcategory = $maintenance_app::filesystem_retention_subcategory();
 				if(!empty($setting->get($category, $subcategory, ''))) {
 					$total_running_maintenance_apps++;
 				}
@@ -210,7 +210,7 @@ if (true) {
 				echo "<button type='button' alt='Save' title='Save' onclick=\"list_form_submit('form_list_maintainers');\" class='btn btn-default ' style='position: absolute; margin-top: -35px; margin-left: -72px;'><span class='fas fa-bolt fa-fw'></span><span class='button-label  pad'>Save</span></button>";
 				echo "<table class='tr_hover' width='100%' cellpadding='0' cellspacing='0' border='0'>";
 					echo "<tr style='position: -webkit-sticky; position: sticky; z-index: 5; top: 0; left: 2px;'>";
-						echo "<th class='hud_heading' style='width: 40%;'>".($text['label-maintenance_application'] ?? 'Maintenance Application')."</th>";
+						echo "<th class='hud_heading' style='width: 40%;'>".($text['label-app'] ?? 'Application')."</th>";
 						echo "<th class='hud_heading' style='width: 15%;'>".'Database'."</th>";
 						echo "<th class='hud_heading' style='width: 15%;'>".'Days'."</th>";
 						echo "<th class='hud_heading' style='width: 15%;'>".'Filesystem'."</th>";
@@ -231,8 +231,8 @@ if (true) {
 						if (class_exists($maintenance_app)) {
 							//check for database status
 							if (has_trait($maintenance_app, 'database_maintenance')) {
-								$database_category = $maintenance_app::$database_retention_category;
-								$database_subcategory = $maintenance_app::$database_retention_subcategory;
+								$database_category = $maintenance_app::database_retention_category();
+								$database_subcategory = $maintenance_app::database_retention_subcategory();
 								$database_default_value = $maintenance_app::database_retention_default_value();
 								$database_days = $setting->get($database_category, $database_subcategory, '');
 								//uuid of setting
@@ -248,8 +248,8 @@ if (true) {
 
 							//check for filesystem status
 							if (has_trait($maintenance_app, 'filesystem_maintenance')) {
-								$filesystem_category = $maintenance_app::$filesystem_retention_category;
-								$filesystem_subcategory = $maintenance_app::$filesystem_retention_subcategory;
+								$filesystem_category = $maintenance_app::filesystem_retention_category();
+								$filesystem_subcategory = $maintenance_app::filesystem_retention_subcategory();
 								$filesystem_default_value = $maintenance_app::filesystem_retention_default_value();
 								$filesystem_days = $setting->get($filesystem_category, $filesystem_subcategory, '');
 								//uuid of setting
@@ -276,7 +276,8 @@ if (true) {
 						}
 						//display the maintanence application
 						echo "<tr>";
-							echo "<td valign='top' class='".$row_style[$c]." hud_text'>$maintenance_app</td>";
+							$display_name = ucwords(str_replace('_', ' ', $maintenance_app));
+							echo "<td valign='top' class='".$row_style[$c]." hud_text'>$display_name</td>";
 							//
 							// Database apps
 							//
