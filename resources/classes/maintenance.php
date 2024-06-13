@@ -43,234 +43,18 @@ class maintenance {
 	const TOGGLE_VALUES = ['true', 'false'];
 
 	/**
-	 * Config object
-	 * @var config $config object
-	 */
-	private $config;
-
-	/**
-	 * Database object
-	 * @var database $database object
-	 */
-	private $database;
-
-	/**
-	 * Settings object
-	 * @var settings $settings object
-	 */
-	private $settings;
-
-	/**
-	 * Constructs a maintenance object
-	 * <p>Each parameter is checked to ensure it is a valid object matching the expected type of object needed.</p>
-	 * <p>Valid values:<br>
-	 * <ul>
-	 *   <li>config - must be a valid config object or one will be created
-	 *   <li>database - must be a valid database object or one will be created
-	 *   <li>settings - must be a valid settings object or one will be created
-	 * </ul>
-	 * </p>
-	 * @param array $params Key/value pairs of object class name and the object
-	 */
-	public function __construct(array $params = []) {
-		//try to use config object passed in the constructor
-		if (!empty($params['config']) && $params['config'] instanceof config) {
-			$this->config = $params['config'];
-		} else {
-			//fallback to creating our own object
-			$this->config = new config();
-		}
-		//try to use database object passed in the constructor
-		if (!empty($params['database']) && $params['database'] instanceof database) {
-			$this->database = $params['database'];
-		} else {
-			//fallback to creating our own object
-			$this->database = new database(['config' => $this->config]);
-		}
-		//try to use settings object passed in the constructor
-		if (!empty($params['settings']) && $params['settings'] instanceof settings) {
-			$this->settings = $params['settings'];
-		} else {
-			$this->settings = new settings(['database' => $this->database]);
-		}
-		//set the database object to remember this app for any transactions
-		$this->database->app_name = self::APP_NAME;
-		$this->database->app_uuid = self::APP_UUID;
-	}
-
-	/**
-	 * Query the database for an existing UUID of a maintenance application
-	 * @param database $database Database object
-	 * @param string $category Category to look for in the database
-	 * @param string $subcategory Subcategory or name of the setting in the default settings table
-	 * @return string Empty string if not found or a UUID
-	 */
-	public static function default_setting_uuid(database $database, string $category, string $subcategory): string {
-		$sql = 'select default_setting_uuid'
-			. ' from v_default_settings'
-			. ' where default_setting_category = :category'
-			. ' and default_setting_subcategory = :subcategory'
-		;
-		$params = [];
-		$params['category'] = $category;
-		$params['subcategory'] = $subcategory;
-		return $database->select($sql, $params, 'column');
-	}
-
-	/**
-	 * Update the default settings to reflect all classes implementing the maintenance traits in the project
-	 * <p>This is called when the <i>App Defaults</i> is executed either from the command line or the web
-	 * user interface.</p>
-	 * @param database $database
-	 * @access public
-	 */
-	public static function app_defaults(database $database) {
-		//require the maintenance functions for processing traits
-		if (!function_exists('has_trait')) {
-			if (file_exists(dirname(__DIR__) . '/functions.php')) {
-				require_once dirname(__DIR__) . '/functions.php';
-			} else {
-				return;
-			}
-		}
-
-		//load all classes in the project
-		$project_root = dirname(__DIR__, 4);
-		$class_files = glob($project_root . '/*/*/resources/classes/*.php');
-		foreach ($class_files as $file) {
-			try {
-				//register the class name
-				include_once $file;
-			} catch (Throwable $t) {
-				//do nothing
-			}
-		}
-
-		//get the loaded declared classes in an array from the php engine
-		$declared_classes = get_declared_classes();
-
-		//initialize the array
-		$found_applications = [];
-
-		//iterate over each class and check for it implementing the maintenance trait
-		foreach ($declared_classes as $class) {
-			// Check if the class implements the interfaces
-			if (has_trait($class, 'database_maintenance') || has_trait($class, 'filesystem_maintenance')) {
-				// Add the class to the array so it can be added and default settings can be applied
-				$found_applications[] = $class;
-			}
-		}
-
-		//check if we have to add classes not already in default settings
-		if (count($found_applications) > 0) {
-			self::register_applications($database, $found_applications);
-		}
-
-		//check the type of chart and make sure that it has 'none' as default
-		$result = $database->select("select dashboard_chart_type from v_dashboard where dashboard_name='Maintenance'", null, 'column');
-		if ($result !== 'none' || $result !== 'doughnut') {
-			$database->execute("update v_dashboard set dashboard_chart_type='none' where dashboard_name='Maintenance'");
-		}
-
-	}
-
-	/**
-	 * Returns a list of maintenance applications already in the default settings table ignoring default_setting_enabled
-	 * @param database $database
-	 * @return array
-	 * @access public
-	 */
-	public static function get_registered_applications(database $database): array {
-		//get the already registered applications from the global default settings table
-		$sql = "select default_setting_value"
-			. " from v_default_settings"
-			. " where default_setting_category = 'maintenance'"
-			. " and default_setting_subcategory = 'application'";
-
-		$result = $database->select($sql);
-		if (!empty($result)) {
-			$registered_applications = array_map(function ($row) { return $row['default_setting_value']; }, $result);
-		}
-		else {
-			$registered_applications = [];
-		}
-		return $registered_applications;
-	}
-
-	/**
-	 * Returns a list of default settings and domain settings tables allowing to ignore the default_setting_enabled
-	 * @param database $database Database object
-	 * @param string $subcategory_name
-	 * @return array List of retention days with the default setting UUID as the key and the retention days as the value
-	 */
-	public static function get_default_retention_days(database $database, string $subcategory_name, bool $omit_default_setting_enabled = false, bool $default_setting_enabled = true): array {
-		$default_setting_enabled_string = $default_setting_enabled ? 'true' : 'false';
-		$retention_settings = [];
-		$sql = "select default_setting_uuid, default_setting_category, default_setting_value from v_default_settings";
-		$sql .= " where default_setting_subcategory='$subcategory_name'";
-		if (!$omit_default_setting_enabled) {
-			$sql .= " and default_setting_enabled='$default_setting_enabled_string'";
-		}
-		$sql .= " group by default_setting_category, default_setting_uuid, default_setting_value";
-		$result = $database->select($sql, null, 'all');
-		if (!empty($result)) {
-			foreach ($result as $row) {
-				$app_name = $row['default_setting_category'];
-				$uuid = $row['default_setting_uuid'];
-				$value = $row['default_setting_value'];
-				$retention_settings[$app_name][$uuid] = $value;
-			}
-		}
-
-		return $retention_settings;
-	}
-
-	/**
-	 * Returns a list of default settings and domain settings tables allowing to ignore the default_setting_enabled
-	 * @param database $database Database object
-	 * @param string $category_name
-	 * @return array List of retention days with the default setting UUID as the key and the retention days as the value
-	 */
-	public static function get_domain_retention_days(database $database, string $category_name, bool $omit_default_setting_enabled = false, bool $default_setting_enabled = true): array {
-		//set defaults
-		$retention_settings = [];
-		$default_setting_enabled_string = $default_setting_enabled ? 'true' : 'false';
-		//build sql statement
-		$sql = "select default_setting_uuid, default_setting_category, default_setting_value from v_domain_settings";
-		$sql .= " where default_setting_subcategory='$category_name'";
-		if (!$omit_default_setting_enabled) {
-			$sql .= " and default_setting_enabled='$default_setting_enabled_string'";
-		}
-		//ensure the returned list is already sorted
-		$sql .= " group by default_setting_category, default_setting_uuid, default_setting_value";
-		//execute the query
-		$result = $database->select($sql, null, 'all');
-		//check result
-		if (!empty($result)) {
-			//map the results
-			foreach ($result as $row) {
-				$app_name = $row['default_setting_category'];
-				$uuid = $row['default_setting_uuid'];
-				$value = $row['default_setting_value'];
-				//two-dimensional array of name & uuid set to value
-				$retention_settings[$app_name][$uuid] = $value;
-			}
-		}
-		//return settings
-		return $retention_settings;
-	}
-
-	/**
 	 * Returns an array of domain names with their domain UUID as the array key
 	 * @param database $database
-	 * @param bool $ignore_domain_enabled
+	 * @param bool $ignore_domain_enabled Omit the SQL where clause for domain_enabled
+	 * @param bool $domain_status When the <code>$ignore_domain_enabled</code> is false, set the status to true or false
 	 * @return array
 	 */
-	public static function get_domain_names(database $database, bool $ignore_domain_enabled = false): array {
+	public static function get_domains(database $database, bool $ignore_domain_enabled = false, bool $domain_status = true): array {
 		$domains = [];
+		$status_string = $domain_status ? 'true' : 'false';
 		$sql = "select domain_uuid, domain_name from v_domains";
 		if (!$ignore_domain_enabled) {
-			$sql .= " where domain_enabled='true'";
+			$sql .= " where domain_enabled='$status_string'";
 		}
 		$result = $database->select($sql);
 		if (!empty($result)) {
@@ -288,7 +72,12 @@ class maintenance {
 	 * @return bool
 	 * @access public
 	 */
-	public static function register_applications(database $database, array $maintenance_apps): bool {
+	public static function register_applications(database $database): bool {
+		//get the maintenance apps
+		$database_maintenance_apps = self::find_classes_by_method('database_maintenance');
+		$filesystem_maintenance_apps = self::find_classes_by_method('filesystem_maintenance');
+		$maintenance_apps = $database_maintenance_apps + $filesystem_maintenance_apps;
+
 		//make sure there is something to do
 		if (count($maintenance_apps) === 0) {
 			return false;
@@ -361,11 +150,9 @@ class maintenance {
 	 */
 	private static function add_database_maintenance_to_array($database, $application, $description, &$array, &$index) {
 		//get the application settings from the object for database maintenance
-		if (has_trait($application, 'database_maintenance')) {
-			//the trait has this value defined
-			$category = $application::database_retention_category();
-			//the trait has this value defined
-			$subcategory = $application::database_retention_subcategory();
+		if (method_exists($application, 'database_maintenance')) {
+			$category = 'maintenance';
+			$subcategory = $application . '_database_retention_days';
 			//check if the default setting already exists in global default settings table
 			$uuid = self::default_setting_uuid($database, $category, $subcategory);
 			if (empty($uuid)) {
@@ -374,8 +161,8 @@ class maintenance {
 				$array['default_settings'][$index]['default_setting_subcategory'] = $subcategory;
 				$array['default_settings'][$index]['default_setting_uuid'] = uuid();
 				$array['default_settings'][$index]['default_setting_name'] = 'numeric';
-				$array['default_settings'][$index]['default_setting_value'] = $application::database_retention_default_value();
-				$array['default_settings'][$index]['default_setting_enabled'] = 'true';
+				$array['default_settings'][$index]['default_setting_value'] = '30';
+				$array['default_settings'][$index]['default_setting_enabled'] = 'false';
 				$array['default_settings'][$index]['default_setting_description'] = $description;
 				$index++;
 			} else {
@@ -417,5 +204,32 @@ class maintenance {
 				$index++;
 			}
 		}
+	}
+
+	public static function find_classes_by_method(string $method_name): array {
+		//set defaults
+		$found_classes = [];
+		$project_root = dirname(__DIR__, 4);
+
+		//get the autoloader
+		if (!class_exists('auto_loader')) {
+			require_once $project_root . '/resources/classes/auto_loader.php';
+			new auto_loader();
+		}
+
+		//get all php files
+		$files = glob($project_root . '/*/*/resources/classes/*.php');
+
+		//iterate over the files
+		foreach ($files as $file) {
+			include_once $file;
+			$class = basename($file, '.php');
+
+			//check for the existence of the method
+			if (method_exists($class, $method_name)) {
+				$found_classes[$class] = $file;
+			}
+		}
+		return $found_classes;
 	}
 }
