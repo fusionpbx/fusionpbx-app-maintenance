@@ -116,7 +116,7 @@ else {
 }
 
 //get the list of domains
-$domain_names = maintenance::get_domain_names($database);
+$domain_names = maintenance::get_domains($database);
 
 //create the token
 $object = new token;
