@@ -207,7 +207,7 @@ class maintenance_service extends service {
 	 */
 	protected function run_maintenance() {
 		//get the registered apps
-		$apps = $this->settings->get('maintenance', 'applications', []);
+		$apps = $this->settings->get('maintenance', 'application', []);
 		foreach ($apps as $app) {
 			//execute all database maintenance applications
 			if (method_exists($app, 'database_maintenance')) {
