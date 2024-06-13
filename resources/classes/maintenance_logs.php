@@ -33,8 +33,6 @@
  */
 class maintenance_logs {
 
-	use database_maintenance;
-
 	const APP_NAME = 'maintenance_logs';
 	const APP_UUID = '5be7b4c2-1a4f-4236-b91a-60e3c33904d7';
 	const PERMISSION_PREFIX = 'maintenance_log_';
@@ -48,6 +46,117 @@ class maintenance_logs {
 	private $settings;
 	private $domain_uuid;
 	private $user_uuid;
+
+	/**
+	 * Called when a database maintenance is triggered from the maintenance service.
+	 * <p>This could be copied and pasted in to any other class that requires database maintenance
+	 * as long as the constant for TABLE exists. Currently most classes would need to be changed from using
+	 * $this->table (only available with an object) to be self::TABLE (available without an object).</p>
+	 */
+	public static function database_maintenance(settings $settings): void {
+		//set the table name for this class
+		$table = self::TABLE;
+		//get the database used
+		$database = $settings->database();
+		//get a list of all domains ignoring the domain_enabled field
+		$domains = maintenance_service::get_domains($database, true);
+		//run the maintenance per domain
+		foreach ($domains as $domain_uuid => $domain_name) {
+			//get the settings for this domain
+			$domain_settings = new $settings(['database' => $database, 'domain_uuid' => $domain_uuid]);
+			//get retention days with automatic default settings fallback
+			$retention = $domain_settings->get('maintenance', self::class . '_database_retention_days', '');
+			//ensure there is something to do
+			if (!empty($retention) && is_numeric($retention)) {
+				//delete old entries for this domain
+				$database->execute("delete from v_{$table} where insert_date < NOW() - INTERVAL '{$retention} days' and domain_uuid = '{$domain_uuid}'");
+				//ensure the removal was successful
+				if ($database->message['code'] === '200') {
+					//log success
+					maintenance_service::log_write(self::class, "Removed maintenance log entries older than $retention days", $domain_uuid);
+				} else {
+					//log failure
+					maintenance_service::log_write(self::class, "Failed to clear entries for $domain_name", $domain_uuid, maintenance_service::LOG_ERROR);
+				}
+			} else {
+				//database retention not set or not a valid number
+				maintenance_service::log_write(self::class, 'Retention days not set', '', maintenance_service::LOG_ERROR);
+			}
+		}
+	}
+
+//	/**
+//	 * Called when a file system maintenance is triggered from the maintenance service.
+//	 * <p>Maintenance logs does not use the filesystem. This is here only as an example
+//	 * for implementing a quota system for voicemail messages. This code has not been
+//	 * thoroughly tested.</p>
+//	 * @param settings $settings
+//	 * @return void
+//	 */
+//	public static function filesystem_maintenance(settings $settings): void {
+//		$database = $settings->database();
+//		$voicemail_location = $settings->get('switch', 'voicemail', '/var/lib/freeswitch/storage/voicemail') . '/default';
+//		$domains = maintenance_service::get_domains($database, true);
+//		foreach ($domains as $domain_uuid => $domain_name) {
+//			$domain_settings = new settings(['database' => $database, 'domain_uuid' => $domain_uuid]);
+//			$quota_bytes = $domain_settings('maintenance', self::class . '_filesystem_quota_bytes');
+//			$directory = $voicemail_location . "/$domain_name/*";
+//			$wav_files = glob($directory . '/msg_*.wav');
+//			$mp3_files = glob($directory . '/msg_*.mp3');
+//			$voicemail_files = array_merge($wav_files, $mp3_files);
+//			$files = [];
+//			foreach ($voicemail_files as $file) {
+//				$files[] = [
+//					'path' => $file,
+//					'size' => filesize ($file),
+//					'mtime' => filemtime($file)
+//				];
+//			}
+//			usort($files, function ($a, $b) {
+//				if (!empty($a) && !empty($b)) {
+//					return $a['mtime'] <=> $b['mtime'];
+//				} else {
+//					return 0;
+//				}
+//			});
+//			$total_bytes = array_sum(array_column($files, 'size'));
+//			foreach ($files as $file) {
+//				while ($total_bytes > $quota_bytes) {
+//					//directory is over quota
+//					if (unlink($file['path'])) {
+//						maintenance_service::log_write(self::class, "Removed oldest voicemail file:" . $file['path'], $domain_uuid);
+//						$total_bytes -= $file['size'];
+//					} else {
+//						maintenance_service::log_write(self::class, "Failed to delete file: " . $file['path'], $domain_uuid, maintenance_service::LOG_ERROR);
+//					}
+//				}
+//			}
+//		}
+//	}
+
+//	/**
+//	 * Called when a file system maintenance is triggered from the maintenance service.
+//	 * <p>Maintenance logs does not use the filesystem. This is here only as an example for voicemail messages.</p>
+//	 * @param settings $settings
+//	 * @return void
+//	 */
+//	public static function filesystem_maintenance(settings $settings): void {
+//		$database = $settings->database();
+//		$voicemail_location = $settings->get('switch', 'voicemail', '/var/lib/freeswitch/storage/voicemail') . '/default';
+//		$domains = maintenance_service::get_domains($database, true);
+//		foreach ($domains as $domain_uuid => $domain_name) {
+//			$mp3_files = glob("$voicemail_location/$domain_name/*/msg_*.mp3");
+//			$wav_files = glob("$voicemail_location/$domain_name/*/msg_*.wav");
+//			$domain_voicemail_files = array_merge($mp3_files, $wav_files);
+//			foreach ($domain_voicemail_files as $file) {
+//				if (unlink($domain_voicemail_files)) {
+//					maintenance_service::log_write(self::class, "File $file removed successfully", $domain_uuid);
+//				} else {
+//					maintenance_service::log_write(self::class, "Unable to remove $file", $domain_uuid, maintenance_service::LOG_ERROR);
+//				}
+//			}
+//		}
+//	}
 
 	public function __construct(database $database, settings $settings) {
 		if ($database !== null) {
@@ -71,13 +180,6 @@ class maintenance_logs {
 
 		$database->app_name = self::APP_NAME;
 		$database->app_uuid = self::APP_UUID;
-	}
-
-	public static function database_maintenance_sql(string $domain_uuid, string $retention_days): string {
-		return "delete from v_maintenance_logs"
-			. " where insert_date < NOW() - INTERVAL '$retention_days days'"
-			. " and (domain_uuid = '$domain_uuid' or domain_uuid is null)"
-		;
 	}
 
 	/**
