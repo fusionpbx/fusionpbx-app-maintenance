@@ -65,6 +65,15 @@ class maintenance {
 		return $domains;
 	}
 
+	public static function app_defaults(database $database) {
+		//get the maintenance apps
+		$database_maintenance_apps = self::find_classes_by_method('database_maintenance');
+		$filesystem_maintenance_apps = self::find_classes_by_method('filesystem_maintenance');
+		$maintenance_apps = $database_maintenance_apps + $filesystem_maintenance_apps;
+
+		self::register_applications($database, $maintenance_apps);
+	}
+
 	/**
 	 * Registers the list of applications given in the $maintenance_apps array to the global default settings
 	 * @param database $database
@@ -72,11 +81,7 @@ class maintenance {
 	 * @return bool
 	 * @access public
 	 */
-	public static function register_applications(database $database): bool {
-		//get the maintenance apps
-		$database_maintenance_apps = self::find_classes_by_method('database_maintenance');
-		$filesystem_maintenance_apps = self::find_classes_by_method('filesystem_maintenance');
-		$maintenance_apps = $database_maintenance_apps + $filesystem_maintenance_apps;
+	public static function register_applications(database $database, array $maintenance_apps): bool {
 
 		//make sure there is something to do
 		if (count($maintenance_apps) === 0) {
@@ -92,7 +97,7 @@ class maintenance {
 		//register each app
 		$new_maintenance_apps = [];
 		$index = 0;
-		foreach ($maintenance_apps as $application) {
+		foreach ($maintenance_apps as $application => $file) {
 			//format the array for what the database object needs for saving data in the global default settings
 			self::add_maintenance_app_to_array($registered_apps, $application, $text['description-default_settings_app'], $new_maintenance_apps, $index);
 
@@ -109,6 +114,29 @@ class maintenance {
 			return true;
 		}
 		return false;
+	}
+
+	/**
+	 * Returns a list of maintenance applications already in the default settings table ignoring default_setting_enabled
+	 * @param database $database
+	 * @return array
+	 * @access public
+	 */
+	public static function get_registered_applications(database $database): array {
+		//get the already registered applications from the global default settings table
+		$sql = "select default_setting_value"
+			. " from v_default_settings"
+			. " where default_setting_category = 'maintenance'"
+			. " and default_setting_subcategory = 'application'";
+
+		$result = $database->select($sql);
+		if (!empty($result)) {
+			$registered_applications = array_map(function ($row) { return $row['default_setting_value']; }, $result);
+		}
+		else {
+			$registered_applications = [];
+		}
+		return $registered_applications;
 	}
 
 	/**
@@ -172,6 +200,25 @@ class maintenance {
 	}
 
 	/**
+	 * Query the database for an existing UUID of a maintenance application
+	 * @param database $database Database object
+	 * @param string $category Category to look for in the database
+	 * @param string $subcategory Subcategory or name of the setting in the default settings table
+	 * @return string Empty string if not found or a UUID
+	 */
+	public static function default_setting_uuid(database $database, string $category, string $subcategory): string {
+		$sql = 'select default_setting_uuid'
+			. ' from v_default_settings'
+			. ' where default_setting_category = :category'
+			. ' and default_setting_subcategory = :subcategory'
+		;
+		$params = [];
+		$params['category'] = $category;
+		$params['subcategory'] = $subcategory;
+		return $database->select($sql, $params, 'column');
+	}
+
+	/**
 	 * Updates the array with a file system maintenance app using a format the database object save method can use in default settings table
 	 * <p><b>default setting category:</b> class name that has the <code>use filesystem_maintenance;</code> statement<br>
 	 * <b>default setting subcategory:</b> "filesystem_retention_days" (The class can override this setting to a custom value)<br>
@@ -186,11 +233,11 @@ class maintenance {
 	 * @access private
 	 */
 	private static function add_filesystem_maintenance_to_array($database, $application, $description, &$array, &$index) {
-		if (has_trait($application, 'filesystem_maintenance')) {
+		if (method_exists($application, 'filesystem_maintenance')) {
 			//the trait has this value defined
-			$category = $application::filesystem_retention_category();
+			$category = 'maintenance';
 			//the trait has this value defined
-			$subcategory = $application::filesystem_retention_subcategory();
+			$subcategory = $application . '_fileystem_retention_days';
 			//check if the default setting already exists in global settings
 			$uuid = self::default_setting_uuid($database, $category, $subcategory);
 			if (empty($uuid)) {
@@ -198,7 +245,7 @@ class maintenance {
 				$array['default_settings'][$index]['default_setting_subcategory'] = $subcategory;
 				$array['default_settings'][$index]['default_setting_uuid'] = uuid();
 				$array['default_settings'][$index]['default_setting_name'] = 'numeric';
-				$array['default_settings'][$index]['default_setting_value'] = $application::filesystem_retention_default_value();
+				$array['default_settings'][$index]['default_setting_value'] = '30';
 				$array['default_settings'][$index]['default_setting_enabled'] = 'true';
 				$array['default_settings'][$index]['default_setting_description'] = $description;
 				$index++;

@@ -29,13 +29,6 @@
 //includes files
 	require_once dirname(__DIR__, 4) . "/resources/require.php";
 
-//check for extra functions
-	if (!function_exists('has_trait')) {
-		if (file_exists(dirname(__DIR__) . '/functions.php')) {
-			require_once dirname(__DIR__) . '/functions.php';
-		}
-	}
-
 //connect to the database
 	if (!isset($database)) {
 		$database = database::new();
@@ -155,19 +148,19 @@
 	foreach ($maintainers as $maintenance_app) {
 		if (class_exists($maintenance_app)) {
 			//check for database status
-			if (has_trait($maintenance_app, 'database_maintenance')) {
+			if (method_exists($maintenance_app, 'database_maintenance')) {
 				$total_maintenance_apps++;
-				$category = $maintenance_app::database_retention_category();
-				$subcategory = $maintenance_app::database_retention_subcategory();
+				$category = 'maintenance';
+				$subcategory = $maintenance_app . '_database_retention_days';
 				if (!empty($setting->get($category, $subcategory, ''))) {
 					$total_running_maintenance_apps++;
 				}
 			}
 			//check for filesystem status
-			if (has_trait($maintenance_app, 'filesystem_maintenance')) {
+			if (method_exists($maintenance_app, 'filesystem_maintenance')) {
 				$total_maintenance_apps++;
-				$category = $maintenance_app::filesystem_retention_category();
-				$subcategory = $maintenance_app::filesystem_retention_subcategory();
+				$category = 'maintenance';
+				$subcategory = $maintenance_app . '_filesystem_retention_days';
 				if(!empty($setting->get($category, $subcategory, ''))) {
 					$total_running_maintenance_apps++;
 				}
@@ -230,10 +223,10 @@ if (true) {
 						$param = [];
 						if (class_exists($maintenance_app)) {
 							//check for database status
-							if (has_trait($maintenance_app, 'database_maintenance')) {
-								$database_category = $maintenance_app::database_retention_category();
-								$database_subcategory = $maintenance_app::database_retention_subcategory();
-								$database_default_value = $maintenance_app::database_retention_default_value();
+							if (method_exists($maintenance_app, 'database_maintenance')) {
+								$database_category = 'maintenance';
+								$database_subcategory = $maintenance_app . '_database_retention_days';
+								$database_default_value = '30';
 								$database_days = $setting->get($database_category, $database_subcategory, '');
 								//uuid of setting
 								$database_setting_uuids = maintenance_service::find_uuid($database, $database_category, $database_subcategory);
@@ -247,10 +240,10 @@ if (true) {
 							}
 
 							//check for filesystem status
-							if (has_trait($maintenance_app, 'filesystem_maintenance')) {
-								$filesystem_category = $maintenance_app::filesystem_retention_category();
-								$filesystem_subcategory = $maintenance_app::filesystem_retention_subcategory();
-								$filesystem_default_value = $maintenance_app::filesystem_retention_default_value();
+							if (method_exists($maintenance_app, 'filesystem_maintenance')) {
+								$filesystem_category = 'maintenance';
+								$filesystem_subcategory = $maintenance_app . '_filesystem_retention_days';
+								$filesystem_default_value = '30';
 								$filesystem_days = $setting->get($filesystem_category, $filesystem_subcategory, '');
 								//uuid of setting
 								$filesystem_setting_uuids = maintenance_service::find_uuid($database, $filesystem_category, $filesystem_subcategory);
