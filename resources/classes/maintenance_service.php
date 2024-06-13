@@ -206,42 +206,20 @@ class maintenance_service extends service {
 	 * Executes the maintenance for both database and filesystem objects using their respective helper methods
 	 */
 	protected function run_maintenance() {
-		//execute all database maintainer classes
-		$this->database_maintenance();
-		//execute all filesystem maintainer classes
-		$this->filesystem_maintenance();
+		//get the registered apps
+		$apps = $this->settings->get('maintenance', 'applications', []);
+		foreach ($apps as $app) {
+			//execute all database maintenance applications
+			if (method_exists($app, 'database_maintenance')) {
+				$app::database_maintenance($this->settings);
+			}
+			//execute all filesystem maintenance applications
+			if (method_exists($app, 'filesystem_maintenance')) {
+				$app::filesystem_maintenance($this->settings);
+			}
+		}
 		//write only once to database maintainance logs and flush the array
 		self::log_flush();
-	}
-
-	/**
-	 * Performs all database maintenance by calling each object that implements the database_maintenance interface
-	 * @return void
-	 */
-	protected function database_maintenance(): void {
-		//go through the list of registered apps in default settings
-		foreach ($this->maintenance_apps as $class_name) {
-			//check the class implements database_maintenance
-			if (has_trait($class_name, 'database_maintenance')) {
-				//call the method statically so it does not invoke the constructor
-				$class_name::database_maintenance($this->database, $this->settings);
-			}
-		}
-	}
-
-	/**
-	 * Performs all file system maintenance by calling each object that implements the filesystem_maintenance interface
-	 * @return void
-	 */
-	protected function filesystem_maintenance(): void {
-		//go through the list of registered apps in default settings
-		foreach ($this->maintenance_apps as $class_name) {
-			//check the class implements filesystem_maintenance
-			if (has_trait($class_name, 'filesystem_maintenance')) {
-				//call the method statically so it does not invoke the constructor
-				$class_name::filesystem_maintenance($this->database, $this->settings);
-			}
-		}
 	}
 
 	/**
@@ -385,13 +363,15 @@ class maintenance_service extends service {
 	 * Saves the logs in an array in order to write them all at once. This is to remove the number of times the database will try to
 	 * be written to during the many worker processes to improve performance similar to an atomic commit.
 	 * @param database_maintenance|filesystem_maintenance|string $worker_or_classname
-	 * @param string $message
+	 * @param string $message Message to put in the log
+	 * @param string|null $domain_uuid UUID of the domain that applies or null (default)
+	 * @param string $status LOG_OK (default) or LOG_ERROR
 	 */
-	public static function log_write($worker_or_classname, string $message, string $domain_uuid = '', string $status = self::LOG_OK) {
+	public static function log_write($worker_or_classname, string $message, ?string $domain_uuid = null, string $status = self::LOG_OK) {
 		require_once dirname(__DIR__) . '/functions.php';
 		$classname = get_classname($worker_or_classname);
-		//protect against hijacking the log writer from a non maintenance worker
-		if (self::$logs !== null && (has_trait($classname, 'database_maintenance') || has_trait($classname, 'filesystem_maintenance'))) {
+		//protect against hijacking the log writer
+		if (self::$logs !== null) {
 			$row_index = count(self::$logs);
 			self::$logs[$row_index]['domain_uuid'] = $domain_uuid;
 			self::$logs[$row_index]['maintenance_log_uuid'] = uuid();
@@ -400,7 +380,7 @@ class maintenance_service extends service {
 			self::$logs[$row_index]['maintenance_log_message'] = $message;
 			self::$logs[$row_index]['maintenance_log_status'] = $status;
 
-			//only allow up to 100 entries before flushing
+			//only allow up to 100 entries before saving to the database
 			if (count(self::$logs) > 100) {
 				self::log_flush();
 			}
@@ -410,18 +390,20 @@ class maintenance_service extends service {
 	/**
 	 * Returns a list of domains with the domain_uuid as the key and the domain_name as the value
 	 * @param database $database
+	 * @param bool $ignore_domain_enabled Omit the where clause for domain_enabled
+	 * @param bool $domain_status When the <code>$ignore_domain_enabled</code> is false, set the status to true or false
 	 * @return array Domain uuid as key and domain name as value
 	 */
-	public static function get_domains(database $database): array {
-		$domain = new domains();
-		$domain->all();
+	public static function get_domains(database $database, bool $ignore_domain_enabled = false, bool $domain_status = true): array {
 		$domains = [];
-		$sql = "select domain_uuid, domain_name"
-			. " from v_domains"
-		;
-		$records = $database->select($sql);
-		if (!empty($records)) {
-			foreach($records as $row) {
+		$status_string = $domain_status ? 'true' : 'false';
+		$sql = "select domain_uuid, domain_name from v_domains";
+		if (!$ignore_domain_enabled) {
+			$sql .= " where domain_enabled='$status_string'";
+		}
+		$result = $database->select($sql);
+		if (!empty($result)) {
+			foreach ($result as $row) {
 				$domains[$row['domain_uuid']] = $row['domain_name'];
 			}
 		}
