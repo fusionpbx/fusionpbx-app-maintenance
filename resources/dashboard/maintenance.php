@@ -179,7 +179,7 @@
 	$row_style[!$c] = "row_style1";
 
 //show the box content
-if (true) {
+if (permission_exists('maintenance_view')) {
 	//show the box
 	echo "<div class='hud_box'>";
 		echo "<div class='hud_container' onclick=\"$('#hud_maintenance_details').slideToggle('fast'); toggle_grid_row_end('Maintenance')\">";
