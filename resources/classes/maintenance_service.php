@@ -197,6 +197,10 @@ class maintenance_service extends service {
 				// check once a minute
 				sleep($this->check_interval);
 			} while ($this->execute_time <> $now && $this->running);
+			//reload settings before executing the tasks to capture changes
+			$this->reload_settings();
+
+			//run all registered apps
 			$this->run_maintenance();
 		}
 		return 0;
@@ -223,12 +227,15 @@ class maintenance_service extends service {
 	}
 
 	/**
-	 * Write to the database
+	 * Write any pending transactions to the database
 	 */
-	private static function log_flush() {
-		$array['maintenance_logs'] = self::$logs;
-		self::$db->save($array, false);
-		self::$logs = [];
+	public static function log_flush() {
+		//ensure the log_flush is not used to hijack the log_write function
+		if (self::$logs !== null) {
+			$array['maintenance_logs'] = self::$logs;
+			self::$db->save($array, false);
+			self::$logs = [];
+		}
 	}
 
 	////////////////////////////////////////////////////
