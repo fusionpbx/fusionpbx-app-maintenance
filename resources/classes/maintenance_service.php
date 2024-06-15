@@ -183,10 +183,6 @@ class maintenance_service extends service {
 		//sleep seconds between tests for matching the current time to the execute time
 		$this->check_interval = intval($this->settings->get('maintenance', 'check_interval', 33));
 
-		//check for starting service exactly on the time needed
-		if ($this->enabled && !empty($this->execute_time) && (date('H:i') == $this->execute_time || self::$execute_on_startup)) {
-			$this->run_maintenance();
-		}
 	}
 
 	/**
@@ -217,6 +213,11 @@ class maintenance_service extends service {
 
 		//reload the default settings
 		$this->reload_settings();
+
+		//check for starting service exactly on the time needed
+		if ($this->enabled && !empty($this->execute_time) && (date('H:i') == $this->execute_time || self::$execute_on_startup)) {
+			$this->run_maintenance();
+		}
 
 		//get the default setting for this service
 		if (!$this->enabled || empty($this->execute_time)) {
