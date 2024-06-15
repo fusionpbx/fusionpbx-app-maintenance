@@ -100,7 +100,7 @@ class maintenance_service extends service {
 		self::append_command_option(command_option::new()
 				->short_option('i')
 				->long_option('immediate')
-				->description('Launch maintenance services immediately on startup')
+				->description('Launch maintenance tasks immediately on startup and on each reload')
 				->functions(['set_immediate'])
 		);
 	}
