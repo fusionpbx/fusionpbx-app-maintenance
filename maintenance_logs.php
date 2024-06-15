@@ -109,7 +109,7 @@ $sql = "SELECT"
 	. " count(m.maintenance_log_uuid)"
 	. " FROM"
 	. "  v_maintenance_logs m"
-	. " JOIN v_domains d ON d.domain_uuid = m.domain_uuid";
+	. " LEFT JOIN v_domains d ON d.domain_uuid = m.domain_uuid";
 if ($show == "all" && permission_exists('maintenance_log_all')) {
 	$sql .= " WHERE true";
 }
@@ -159,7 +159,7 @@ $sql = "SELECT"
 	. ", m.maintenance_log_status"
 	. " FROM"
 	. "  v_maintenance_logs m"
-	. " JOIN v_domains d ON d.domain_uuid = m.domain_uuid";
+	. " LEFT JOIN v_domains d ON d.domain_uuid = m.domain_uuid";
 if ($show == "all" && permission_exists('maintenance_log_all')) {
 	$sql .= " WHERE true";
 }
