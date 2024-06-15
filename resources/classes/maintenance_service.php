@@ -491,7 +491,7 @@ class maintenance_service extends service {
 	 * @depends seconds_since_created
 	 * @access public
 	 */
-	public static function minutes_since_create(string $file): int {
+	public static function minutes_since_created(string $file): int {
 		return floor(self::seconds_since_created($file) / 60);
 	}
 
@@ -514,7 +514,7 @@ class maintenance_service extends service {
 	 * @access public
 	 */
 	public static function hours_since_created(string $file): int {
-		return floor(self::minutes_since_create($file) / 60);
+		return floor(self::minutes_since_created($file) / 60);
 	}
 
 	/**
@@ -525,7 +525,7 @@ class maintenance_service extends service {
 	 * @access public
 	 */
 	public static function hours_since_modified(string $file): int {
-		return floor(self::minutes_since_create($file) / 60);
+		return floor(self::minutes_since_modified($file) / 60);
 	}
 
 	/**
