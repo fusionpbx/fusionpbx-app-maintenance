@@ -79,6 +79,12 @@ if (!empty($_REQUEST['action'])) {
 	unset($token);
 }
 
+if (!empty($_REQUEST['show'])) {
+	$show_all = ($_REQUEST['show'] == 'all') ? true : false;
+} else {
+	$show_all = false;
+}
+
 //load the settings
 $default_settings = new settings(['database' => $database]);
 
@@ -89,13 +95,17 @@ $classes = $default_settings->get('maintenance', 'application', []);
 $maintenance_apps = [];
 
 //get all domains if the user has the permission to see them
-if (permission_exists('maintenance_show_all')) {
+if (permission_exists('maintenance_show_all') && $show_all) {
 	foreach ($classes as $class) {
-		if (has_trait($class, 'database_maintenance')) {
-			$maintenance_apps[$class]['database_maintenance'] = $class::database_maintenance_settings($database);
+		if (method_exists($class, 'database_maintenance')) {
+			$value = $default_settings->get('maintenance', $class . '_database_retention_days', '');
+			$maintenance_apps[$class]['database_maintenance']['global']['domain_setting_value'] = $value;
+			$maintenance_apps[$class]['database_maintenance']['global']['domain_setting_enabled'] = empty($value) ? false : true;
 		}
-		if (has_trait($class, 'filesystem_maintenance')) {
-			$maintenance_apps[$class]['filesystem_maintenance'] = $class::filesystem_maintenance_settings($database);
+		if (method_exists($class, 'filesystem_maintenance')) {
+			$value = $default_settings->get('maintenance', $class . '_database_retention_days', '');
+			$maintenance_apps[$class]['filesystem_maintenance']['global']['domain_setting_value'] = $value;
+			$maintenance_apps[$class]['filesystem_maintenance']['global']['domain_setting_enabled'] = empty($value) ? false : true;
 		}
 	}
 }
@@ -104,12 +114,12 @@ else {
 	$domain_settings = new settings(['domain_uuid' => $domain_uuid]);
 	//get only the local domain values
 	foreach ($classes as $class) {
-		if (has_trait($class, 'database_maintenance')) {
-			$maintenance_apps[$class]['database_maintenance'][$domain_uuid]['domain_setting_value'] = $domain_settings->get($class, $class::database_retention_subcategory());
+		if (method_exists($class, 'database_maintenance')) {
+			$maintenance_apps[$class]['database_maintenance'][$domain_uuid]['domain_setting_value'] = $domain_settings->get('maintenance', $class . '_database_retention_days');
 			$maintenance_apps[$class]['database_maintenance'][$domain_uuid]['domain_setting_enabled'] = true;
 		}
-		if (has_trait($class, 'filesystem_maintenance')) {
-			$maintenance_apps[$class]['filesystem_maintenance'][$domain_uuid]['domain_setting_value'] = $domain_settings->get($class, $class::filesystem_retention_subcategory());
+		if (method_exists($class, 'filesystem_maintenance')) {
+			$maintenance_apps[$class]['filesystem_maintenance'][$domain_uuid]['domain_setting_value'] = $domain_settings->get('maintenance', $class . '_filesystem_retention_days');
 			$maintenance_apps[$class]['filesystem_maintenance'][$domain_uuid]['domain_setting_enabled'] = true;
 		}
 	}
