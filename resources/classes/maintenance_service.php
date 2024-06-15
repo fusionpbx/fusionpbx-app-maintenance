@@ -238,8 +238,11 @@ class maintenance_service extends service {
 			//reload settings before executing the tasks to capture changes
 			$this->reload_settings();
 
-			//run all registered apps
-			$this->run_maintenance();
+			//check that we are still enabled after reload before we execute again
+			if ($this->enabled && !empty($this->execute_time)) {
+				//run all registered apps
+				$this->run_maintenance();
+			}
 		}
 		return 0;
 	}
