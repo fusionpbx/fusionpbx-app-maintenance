@@ -237,7 +237,7 @@ class maintenance {
 			//the trait has this value defined
 			$category = 'maintenance';
 			//the trait has this value defined
-			$subcategory = $application . '_fileystem_retention_days';
+			$subcategory = $application . '_filesystem_retention_days';
 			//check if the default setting already exists in global settings
 			$uuid = self::default_setting_uuid($database, $category, $subcategory);
 			if (empty($uuid)) {
@@ -246,7 +246,7 @@ class maintenance {
 				$array['default_settings'][$index]['default_setting_uuid'] = uuid();
 				$array['default_settings'][$index]['default_setting_name'] = 'numeric';
 				$array['default_settings'][$index]['default_setting_value'] = '30';
-				$array['default_settings'][$index]['default_setting_enabled'] = 'true';
+				$array['default_settings'][$index]['default_setting_enabled'] = 'false';
 				$array['default_settings'][$index]['default_setting_description'] = $description;
 				$index++;
 			}
