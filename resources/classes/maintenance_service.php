@@ -231,7 +231,7 @@ class maintenance_service extends service {
 	 */
 	public static function log_flush() {
 		//ensure the log_flush is not used to hijack the log_write function
-		if (self::$logs !== null) {
+		if (self::$logs !== null && count(self::$logs) > 0) {
 			$array['maintenance_logs'] = self::$logs;
 			self::$db->save($array, false);
 			self::$logs = [];
@@ -425,7 +425,7 @@ class maintenance_service extends service {
 	 */
 	public static function seconds_since_created(string $file): int {
 		//check the file date and time
-		return floor(time() - filectime($file));
+		return floor(time() - filemtime($file));
 	}
 
 	/**
