@@ -39,7 +39,7 @@ if (permission_exists('maintenance_view')) {
 }
 
 if (!empty($_REQUEST['search'])) {
-	$search = $_REQUEST['search'];
+	$search = urldecode($_REQUEST['search']);
 } else {
 	$search = '';
 }
@@ -85,6 +85,22 @@ if (!empty($_REQUEST['show'])) {
 	$show_all = false;
 }
 
+//order by
+if (!empty($_REQUEST['order_by'])) {
+	$order_by = $_REQUEST['order_by'];
+} else {
+	$order_by = '';
+}
+
+//paging
+$rows_per_page = $_SESSION['domain']['paging']['numeric'] ?? 50;
+if (!empty($_REQUEST['page'])) {
+	$page = $_REQUEST['page'];
+	$offset = $rows_per_page * $page;
+} else {
+	$page = '';
+}
+
 //load the settings
 $default_settings = new settings(['database' => $database]);
 
@@ -94,35 +110,111 @@ $classes = $default_settings->get('maintenance', 'application', []);
 //get the display array
 $maintenance_apps = [];
 
-//get all domains if the user has the permission to see them
 if (permission_exists('maintenance_show_all') && $show_all) {
-	foreach ($classes as $class) {
-		if (method_exists($class, 'database_maintenance')) {
-			$value = $default_settings->get('maintenance', $class . '_database_retention_days', '');
-			$maintenance_apps[$class]['database_maintenance']['global']['domain_setting_value'] = $value;
-			$maintenance_apps[$class]['database_maintenance']['global']['domain_setting_enabled'] = empty($value) ? false : true;
-		}
-		if (method_exists($class, 'filesystem_maintenance')) {
-			$value = $default_settings->get('maintenance', $class . '_database_retention_days', '');
-			$maintenance_apps[$class]['filesystem_maintenance']['global']['domain_setting_value'] = $value;
-			$maintenance_apps[$class]['filesystem_maintenance']['global']['domain_setting_enabled'] = empty($value) ? false : true;
+	//get the global settings
+	$sql = "select default_setting_subcategory, default_setting_value, default_setting_enabled from v_default_settings";
+	$sql .= " where default_setting_category = 'maintenance'";
+	$sql .= " and (default_setting_subcategory like '%_database_retention_days' or default_setting_subcategory like '%_filesystem_retention_days')";
+	$parameters = null;
+
+	//filter based on search
+	if (!empty($search)) {
+		$search_param = "%$search%";
+		$sql .= " and default_setting_subcategory like :search";
+		$parameters['search'] = $search_param;
+	}
+	if (!empty($page)) {
+		$sql .= limit_offset($rows_per_page, $offset);
+	}
+
+	$result = $database->execute($sql, $parameters, 'all');
+
+	if (!empty($result)) {
+		foreach ($result as $row) {
+			if (str_ends_with($row['default_setting_subcategory'], '_database_retention_days')) {
+				$class_name = substr($row['default_setting_subcategory'], 0, -1 * strlen('_database_rentention_days') + 1);
+				$maintenance_apps[$class_name]['database_maintenance']['global'] = $row;
+			}
+			if (str_ends_with($row['default_setting_subcategory'], '_filesystem_retention_days')) {
+				$class_name = substr($row['default_setting_subcategory'], 0, -1 * strlen('_filesystem_rentention_days') + 1);
+				$maintenance_apps[$class_name]['filesystem_maintenance']['global'] = $row;
+			}
 		}
 	}
-}
-else {
+	//get the domain settings
+	$sql = "select domain_uuid, domain_setting_subcategory, domain_setting_value, domain_setting_enabled from v_domain_settings";
+	$sql .= " where domain_setting_category = 'maintenance'";
+	$sql .= " and (domain_setting_subcategory like '%_database_retention_days' or domain_setting_subcategory like '%_filesystem_retention_days')";
+
+	//filter based on search
+	if (!empty($search)) {
+		$search_param = "%$search%";
+		$sql .= " and domain_setting_subcategory like :search";
+		$parameters['search'] = $search_param;
+	}
+	if (!empty($page)) {
+		$sql .= limit_offset($rows_per_page, $offset);
+	}
+
+	$result = $database->execute($sql, $parameters, 'all');
+
+	if (!empty($result)) {
+		foreach ($result as $row) {
+			if (str_ends_with($row['domain_setting_subcategory'], '_database_retention_days')) {
+				$class_name = substr($row['domain_setting_subcategory'], 0, -1 * strlen('_database_rentention_days') + 1);
+				$maintenance_apps[$class_name]['database_maintenance'][$row['domain_uuid']] = $row;
+			}
+			if (str_ends_with($row['domain_setting_subcategory'], '_filesystem_retention_days')) {
+				$class_name = substr($row['domain_setting_subcategory'], 0, -1 * strlen('_filesystem_rentention_days') + 1);
+				$maintenance_apps[$class_name]['filesystem_maintenance'][$row['domain_uuid']] = $row;
+			}
+		}
+	}
+} else {
 	$domain_uuid = $_SESSION['domain_uuid'];
-	$domain_settings = new settings(['domain_uuid' => $domain_uuid]);
-	//get only the local domain values
-	foreach ($classes as $class) {
-		if (method_exists($class, 'database_maintenance')) {
-			$maintenance_apps[$class]['database_maintenance'][$domain_uuid]['domain_setting_value'] = $domain_settings->get('maintenance', $class . '_database_retention_days');
-			$maintenance_apps[$class]['database_maintenance'][$domain_uuid]['domain_setting_enabled'] = true;
-		}
-		if (method_exists($class, 'filesystem_maintenance')) {
-			$maintenance_apps[$class]['filesystem_maintenance'][$domain_uuid]['domain_setting_value'] = $domain_settings->get('maintenance', $class . '_filesystem_retention_days');
-			$maintenance_apps[$class]['filesystem_maintenance'][$domain_uuid]['domain_setting_enabled'] = true;
+	//show only the current domain settings
+	$sql = "select domain_uuid, domain_setting_subcategory, domain_setting_value, domain_setting_enabled from v_domain_settings";
+	$sql .= " where domain_setting_category = 'maintenance'";
+	$sql .= " and (domain_setting_subcategory like '%_database_retention_days' or domain_setting_subcategory like '%_filesystem_retention_days')";
+	$sql .= " and domain_uuid = '$domain_uuid'";
+	//filter based on search
+	if (!empty($search)) {
+		$search_param = "%$search%";
+		$sql .= " and domain_setting_subcategory like :search";
+		$parameters['search'] = $search_param;
+	}
+	if (!empty($page)) {
+		$sql .= limit_offset($rows_per_page, $offset);
+	}
+
+	$result = $database->execute($sql, $parameters, 'all');
+
+	if (!empty($result)) {
+		foreach ($result as $row) {
+			if (str_ends_with($row['domain_setting_subcategory'], '_database_retention_days')) {
+				$class_name = substr($row['domain_setting_subcategory'], 0, -1 * strlen('_database_rentention_days') + 1);
+				$maintenance_apps[$class_name]['database_maintenance'][$row['domain_uuid']] = $row;
+			}
+			if (str_ends_with($row['domain_setting_subcategory'], '_filesystem_retention_days')) {
+				$class_name = substr($row['domain_setting_subcategory'], 0, -1 * strlen('_filesystem_rentention_days') + 1);
+				$maintenance_apps[$class_name]['filesystem_maintenance'][$row['domain_uuid']] = $row;
+			}
 		}
 	}
+
+}
+
+//set URL parameters
+$url_params = '';
+
+if ($show_all) {
+	$url_params = (empty($url_params) ? '?' : '&') . 'show=all';
+}
+if (!empty($page)) {
+	$url_params .= (empty($url_params) ? '?' : '&') . 'page=' . $page;
+}
+if (!empty($search)) {
+	$url_params .= (empty($url_params) ? '?' : '&') . 'search=' . urlencode($search);
 }
 
 //get the list of domains
@@ -132,26 +224,36 @@ $domain_names = maintenance::get_domains($database);
 $object = new token;
 $token = $object->create($_SERVER['PHP_SELF']);
 
+//show the content
 require_once dirname(__DIR__, 2) . '/resources/header.php';
 
-//show the content
 $document['title'] = $text['title-maintenance'];
 
 	echo "<div class='action_bar' id='action_bar'>";
 	echo "<div class='heading'><b>Maintenance (" . count($classes) . ")</b></div>";
 	echo "<div class='actions'>";
 		echo button::create(['type'=>'button','label'=>$text['button-logs'],'icon'=>'fas fa-scroll fa-fw','id'=>'btn_logs', 'link'=>'maintenance_logs.php']);
-		echo button_toggle::create(['label'=>$text['button-register'],'icon'=>'fas fa-registered fa-fw']);
-		echo button_show_all::create();
-		echo "<input type='text' class='txt list-search' name='search' id='search' value=\"".escape($search)."\" placeholder=\"".$text['label-search']."\" onkeydown=''>";
-		echo button_search::create(empty($search));
-		echo button_reset::create(empty($search));
+		//show all
+		if (!$show_all) {
+			echo button::create(['type'=>'button','alt'=>$text['button-show_all']??'Show All','label'=>$text['button-show_all']??'Show All','class'=>'btn btn-default','icon'=>$_SESSION['theme']['button_icon_all']??'globe','link'=>(empty($url_params) ? '?show=all' : $url_params . '&show=all')]);
+		}
+		//search form
+		echo "<form id='form_search' class='inline' method='get'>";
+			if (!empty($page)) {
+				echo "<input name='page' type=hidden value='$page'>";
+			}
+			if ($show_all) {
+				echo "<input name='show' type=hidden value='all'>";
+			}
+			echo "<input type='text' class='txt list-search' name='search' id='search' value=\"".escape($search)."\" placeholder=\"".$text['label-search']."\" onkeydown=''>";
+			echo button::create(['label'=>$text['button-search'],'icon'=>$_SESSION['theme']['button_icon_search'],'type'=>'submit','id'=>'btn_search']);
+		echo "</form>";
 	echo "</div>";
 
 	//javascript modal boxes
-	echo modal_copy::create('form_list');
-	echo modal_delete::create('form_list');
-	echo modal_toggle::create('form_list');
+	echo modal::create(['id'=>'modal-copy','type'=>'copy','actions'=> button::create(['type'=>'button','label'=>$text['button-continue'],'icon'=>'check','id'=>'btn_copy','style'=>'float: right; margin-left: 15px;','collapse'=>'never','onclick'=>"modal_close(); list_action_set('copy'); list_form_submit('form_list');"])]);
+	echo modal::create(['id'=>'modal-delete','type'=>'delete','actions'=> button::create(['type'=>'button','label'=>$text['button-continue'],'icon'=>'check','id'=>'btn_delete','style'=>'float: right; margin-left: 15px;','collapse'=>'never','onclick'=>"modal_close(); list_action_set('delete'); list_form_submit('form_list');"])]);
+	echo modal::create(['id'=>'modal-toggle','type'=>'toggle','actions'=> button::create(['type'=>'button','label'=>$text['button-continue'],'icon'=>'check','id'=>'btn_toggle','style'=>'float: right; margin-left: 15px;','collapse'=>'never','onclick'=>"modal_close(); list_action_set('toggle'); list_form_submit('form_list');"])]);
 
 	echo "<div style='clear: both;'></div>";
 	echo "<br/><br/>";
