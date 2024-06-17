@@ -219,29 +219,29 @@ class maintenance_service extends service {
 			$this->run_maintenance();
 		}
 
-		//get the default setting for this service
-		if (!$this->enabled || empty($this->execute_time)) {
-			$this->log('Service not enabled or time_of_day not set', LOG_ERR);
-			$this->running = false;
-			return 1;
-		}
-
 		//main loop
 		while ($this->running) {
-			//wait until the time matches requested time of day
-			do {
-				$now = date('H:i');
-				// check once a minute
-				sleep($this->check_interval);
-			} while ($this->execute_time <> $now && $this->running);
-
-			//reload settings before executing the tasks to capture changes
-			$this->reload_settings();
-
-			//check that we are still enabled after reload before we execute again
+			//allow the service to run but not do anything
 			if ($this->enabled && !empty($this->execute_time)) {
-				//run all registered apps
-				$this->run_maintenance();
+				//wait until the time matches requested time of day
+				do {
+					$server_time = date('H:i');
+					// check more than once a minute
+					sleep($this->check_interval);
+				} while ($this->execute_time <> $server_time && $this->running);
+
+				//reload settings before executing the tasks to capture changes
+				$this->reload_settings();
+
+				//check that we are still enabled after reload before we execute again
+				if ($this->enabled && !empty($this->execute_time)) {
+					//run all registered apps
+					$this->run_maintenance();
+				}
+			} else {
+				//wait five minutes and reload to see if we are enabled
+				sleep(300);
+				$this->reload_settings();
 			}
 		}
 		return 0;
