@@ -35,6 +35,6 @@ try {
 	$maintenance = maintenance_service::create();
 	exit($maintenance->run());
 } catch (Throwable $t) {
-	$t->getMessage();
+	echo $t->getMessage();
 	exit(1);
 }
