@@ -69,13 +69,13 @@
 		 */
 		function get_classname($string_or_object): string {
 			if (gettype($string_or_object) === 'object') {
-				if (version_compare(PHP_VERSION, "8.0.0", "<")) {
+//				if (version_compare(PHP_VERSION, "8.0.0", "<")) {
 					$backtrace = debug_backtrace();
 					$classname = !empty($backtrace[1]['class']) ? $backtrace[1]['class'] : 'object';
-				} else {
-					// PHP 8.0 and higher can extract the class from a dynamic name
-					$classname = $string_or_object::class;
-				}
+//				} else {
+//					// PHP 8.0 and higher can extract the class from a dynamic name
+//					$classname = $string_or_object::class;
+//				}
 			} else {
 				$classname = $string_or_object;
 			}
