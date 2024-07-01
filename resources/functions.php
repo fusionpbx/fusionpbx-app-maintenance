@@ -194,3 +194,5 @@
 			return $trait_classes;
 		}
 	}
+
+?>
