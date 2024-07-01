@@ -199,8 +199,8 @@ if (permission_exists('maintenance_view')) {
 								datasets: [{
 									data: [<?php echo $total_running_maintenance_apps; ?>, <?php echo $total_maintenance_apps; ?>],
 									backgroundColor: [
-										'<?php echo $settings->get('theme', 'dashboard_maintenance_chart_main_color'); ?>',
-										'<?php echo $settings->get('theme', 'dashboard_maintenance_chart_sub_color'); ?>'
+										'<?php echo ($settings->get('theme', 'dashboard_maintenance_chart_main_color') ?? "#2a9df4"); ?>',
+										'<?php echo ($settings->get('theme', 'dashboard_maintenance_chart_sub_color') ?? "#d4d4d4"); ?>'
 									],
 									borderColor: '<?php echo $settings->get('theme', 'dashboard_chart_border_color'); ?>',
 									borderWidth: '<?php echo $settings->get('theme', 'dashboard_chart_border_width'); ?>',
