@@ -177,7 +177,6 @@ if (permission_exists('maintenance_show_all') && $show_all) {
 	$sql .= " where domain_setting_category = 'maintenance'";
 	$sql .= " and (domain_setting_subcategory like '%_database_retention_days' or domain_setting_subcategory like '%_filesystem_retention_days')";
 	$sql .= " and domain_uuid = '$domain_uuid'";
-	//filter based on search
 	if (!empty($search)) {
 		$search_param = "%$search%";
 		$sql .= " and domain_setting_subcategory like :search";
@@ -271,10 +270,12 @@ echo "				<th>Retention Days</th>";
 echo "				<th>File System Enabled</th>";
 echo "				<th>Retention Days</th>";
 echo "			</tr>";
+
 //list all maintenance applications from the defaults settings for global and each domain and show if they are enabled or disabled
 foreach ($maintenance_apps as $class => $app_settings) {
 	//make the class name more user friendly
 	$display_name = ucwords(str_replace('_', ' ', $class));
+
 	//display global first
 	if ((isset($app_settings['database_maintenance']['global']) || isset($app_settings['filesystem_maintenance']['global'])) && permission_exists('maintenance_show_all')) {
 		echo "<tr class='list-row' style=''>";
@@ -303,10 +304,13 @@ foreach ($maintenance_apps as $class => $app_settings) {
 	if (isset($app_settings['database_maintenance']) || isset($app_settings['filesystem_maintenance'])) {
 		//get all domains with database traits
 		$database_domain_uuids = array_keys($app_settings['database_maintenance'] ?? []);
+
 		//get all domains with filesystem traits
 		$filesystem_domain_uuids = array_keys($app_settings['filesystem_maintenance'] ?? []);
+
 		//combine database and filesystem domain_uuids without duplicates
 		$domain_uuids = $database_domain_uuids + $filesystem_domain_uuids;
+
 		//loop through domains that have the database and filesystem traits
 		foreach ($domain_uuids as $domain_uuid) {
 			//skip global it has already been done
