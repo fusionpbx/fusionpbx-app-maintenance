@@ -230,7 +230,7 @@ require_once dirname(__DIR__, 2) . '/resources/header.php';
 $document['title'] = $text['title-maintenance'];
 
 echo "<div class='action_bar' id='action_bar'>";
-echo "	<div class='heading'><b>Maintenance (" . count($classes) . ")</b></div>";
+echo "	<div class='heading'><b>Maintenance (".count($classes).")</b></div>";
 echo "	<div class='actions'>";
 echo button::create(['type'=>'button','label'=>$text['button-logs'],'icon'=>'fas fa-scroll fa-fw','id'=>'btn_logs', 'link'=>'maintenance_logs.php']);
 //show all
@@ -279,7 +279,7 @@ foreach ($maintenance_apps as $class => $app_settings) {
 	if ((isset($app_settings['database_maintenance']['global']) || isset($app_settings['filesystem_maintenance']['global'])) && permission_exists('maintenance_show_all')) {
 		echo "<tr class='list-row' style=''>";
 		echo "	<td>$display_name</td>";
-		echo "	<td>" . $text['label-global'] . "</td>";
+		echo "	<td>".$text['label-global']."</td>";
 		if (isset($app_settings['database_maintenance']['global'])) {
 			$enabled = $app_settings['database_maintenance']['global']['default_setting_enabled'] ? $text['label-yes'] : $text['label-no'];
 			$value = $app_settings['database_maintenance']['global']['default_setting_value'];
@@ -316,7 +316,7 @@ foreach ($maintenance_apps as $class => $app_settings) {
 			echo "<tr class='list-row' style=''>";
 			echo "	<td>$display_name</td>";
 			if (permission_exists('maintenance_show_all')) {
-				echo "<td>" . $domain_names[$domain_uuid] . "</td>";
+				echo "<td>".$domain_names[$domain_uuid]."</td>";
 			}
 			if (isset($app_settings['database_maintenance'][$domain_uuid])) {
 				$enabled = $app_settings['database_maintenance'][$domain_uuid]['domain_setting_enabled'] ? $text['label-yes'] : $text['label-no'];
