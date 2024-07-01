@@ -238,16 +238,16 @@ if (!$show_all) {
 	echo button::create(['type'=>'button','alt'=>$text['button-show_all']??'Show All','label'=>$text['button-show_all']??'Show All','class'=>'btn btn-default','icon'=>$_SESSION['theme']['button_icon_all']??'globe','link'=>(empty($url_params) ? '?show=all' : $url_params . '&show=all')]);
 }
 //search form
-echo "	<form id='form_search' class='inline' method='get'>";
+echo "		<form id='form_search' class='inline' method='get'>";
 if (!empty($page)) {
-	echo "<input name='page' type=hidden value='$page'>";
+	echo "		<input name='page' type=hidden value='$page'>";
 }
 if ($show_all) {
-	echo "<input name='show' type=hidden value='all'>";
+	echo "		<input name='show' type=hidden value='all'>";
 }
-echo "		<input type='text' class='txt list-search' name='search' id='search' value=\"".escape($search)."\" placeholder=\"".$text['label-search']."\" onkeydown=''>";
+echo "			<input type='text' class='txt list-search' name='search' id='search' value=\"".escape($search)."\" placeholder=\"".$text['label-search']."\" onkeydown=''>";
 echo button::create(['label'=>$text['button-search'],'icon'=>$_SESSION['theme']['button_icon_search'],'type'=>'submit','id'=>'btn_search']);
-echo "	</form>";
+echo "		</form>";
 echo "	</div>";
 
 //javascript modal boxes
@@ -264,7 +264,7 @@ echo "		<table class='list'>";
 echo "			<tr class='list-header'>";
 echo "				<th>Name</th>";
 if (permission_exists('maintenance_show_all')) {
-	echo "<th>Domain</th>";
+	echo "			<th>Domain</th>";
 }
 echo "				<th>Database Enabled</th>";
 echo "				<th>Retention Days</th>";
@@ -278,26 +278,26 @@ foreach ($maintenance_apps as $class => $app_settings) {
 	//display global first
 	if ((isset($app_settings['database_maintenance']['global']) || isset($app_settings['filesystem_maintenance']['global'])) && permission_exists('maintenance_show_all')) {
 		echo "<tr class='list-row' style=''>";
-			echo "<td>$display_name</td>";
-				echo "<td>" . $text['label-global'] . "</td>";
-			if (isset($app_settings['database_maintenance']['global'])) {
-				$enabled = $app_settings['database_maintenance']['global']['default_setting_enabled'] ? $text['label-yes'] : $text['label-no'];
-				$value = $app_settings['database_maintenance']['global']['default_setting_value'];
-				echo "<td>$enabled</td>";
-				echo "<td>$value</td>";
-			} else {
-				echo "<td>&nbsp;</td>";
-				echo "<td>&nbsp;</td>";
-			}
-			if (isset($app_settings['filesystem_maintenance']['global'])) {
-				$enabled = $app_settings['filesystem_maintenance']['global']['default_setting_enabled'] ? $text['label-yes'] : $text['label-no'];
-				$value = $app_settings['filesystem_maintenance']['global']['default_setting_value'];
-				echo "<td>$enabled</td>";
-				echo "<td>$value</td>";
-			} else {
-				echo "<td>&nbsp;</td>";
-				echo "<td>&nbsp;</td>";
-			}
+		echo "	<td>$display_name</td>";
+		echo "	<td>" . $text['label-global'] . "</td>";
+		if (isset($app_settings['database_maintenance']['global'])) {
+			$enabled = $app_settings['database_maintenance']['global']['default_setting_enabled'] ? $text['label-yes'] : $text['label-no'];
+			$value = $app_settings['database_maintenance']['global']['default_setting_value'];
+			echo "<td>$enabled</td>";
+			echo "<td>$value</td>";
+		} else {
+			echo "<td>&nbsp;</td>";
+			echo "<td>&nbsp;</td>";
+		}
+		if (isset($app_settings['filesystem_maintenance']['global'])) {
+			$enabled = $app_settings['filesystem_maintenance']['global']['default_setting_enabled'] ? $text['label-yes'] : $text['label-no'];
+			$value = $app_settings['filesystem_maintenance']['global']['default_setting_value'];
+			echo "<td>$enabled</td>";
+			echo "<td>$value</td>";
+		} else {
+			echo "<td>&nbsp;</td>";
+			echo "<td>&nbsp;</td>";
+		}
 		echo "</tr>";
 	}
 	if (isset($app_settings['database_maintenance']) || isset($app_settings['filesystem_maintenance'])) {
