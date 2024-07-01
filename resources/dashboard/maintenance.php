@@ -182,18 +182,65 @@
 if (permission_exists('maintenance_view')) {
 	//show the box
 	echo "<div class='hud_box'>";
-		echo "<div class='hud_container' onclick=\"$('#hud_maintenance_details').slideToggle('fast'); toggle_grid_row_end('Maintenance')\">";
-			echo "<span class='hud_title' onclick=\"document.location.href='/app/maintenance/maintenance.php'\">Maintenance</span>";
+		echo "<div class='hud_content' onclick=\"$('#hud_maintenance_details').slideToggle('fast'); toggle_grid_row_end('Maintenance')\">";
+			echo "<span class='hud_title' onclick=\"document.location.href='/app/maintenance/maintenance.php'\">".$text['label-maintenance']."</span>";
 			echo "<script src='/app/maintenance/resources/javascript/maintenance_functions.js'></script>";
 			if ($dashboard_chart_type === 'doughnut') {
 				//add an event listener for showing and hiding the days input box
-				echo "<div style='width: 150px; height: 150px; padding-top: 7px;'><canvas id='maintenance_chart'></canvas></div>";
-				echo "<script src='/app/maintenance/resources/javascript/maintenance_chart.js'></script>";
+				echo "<div class='hud_chart' style='width: 250px;'><canvas id='maintenance_chart'></canvas></div>";
+				echo "	<script>\n";
+				echo "		const maintenance_chart = new Chart(\n";
+				echo "			document.getElementById('maintenance_chart').getContext('2d'),\n";
+				echo "			{\n";
+				echo "				type: 'doughnut',\n";
+				echo "				data: {\n";
+				echo "					labels: ['".$text['label-active'].": ".$total_running_maintenance_apps."', '".$text['label-total'].": ".$total_maintenance_apps."'],\n";
+				echo "					datasets: [{\n";
+				echo "						data: [".$total_running_maintenance_apps.", ".$total_maintenance_apps."],\n";
+				echo "						backgroundColor: [\n";
+				echo "							'".$settings->get('theme', 'dashboard_maintenance_chart_main_color')."',\n";
+				echo "							'".$settings->get('theme', 'dashboard_maintenance_chart_sub_color')."'\n";
+				echo "						],\n";
+				echo "						borderColor: '".$settings->get('theme', 'dashboard_chart_border_color')."',\n";
+				echo "						borderWidth: '".$settings->get('theme', 'dashboard_chart_border_width')."',\n";
+				echo "					}]\n";
+				echo "				},\n";
+				echo "				options: {\n";
+				echo "					plugins: {\n";
+				echo "						chart_number: {\n";
+				echo "							text: ".$total_running_maintenance_apps."\n";
+				echo "						},\n";
+				echo "						legend: {\n";
+				echo "							display: true,\n";
+				echo "							position: 'right',\n";
+				echo "							reverse: true,\n";
+				echo "							labels: {\n";
+				echo "								usePointStyle: true,\n";
+				echo "								pointStyle: 'rect'\n";
+				echo "							}\n";
+				echo "						},\n";
+				echo "					}\n";
+				echo "				},\n";
+				echo "				plugins: [{\n";
+				echo "					id: 'chart_number',\n";
+				echo "					beforeDraw(chart, args, options){\n";
+				echo "						const {ctx, chartArea: {top, right, bottom, left, width, height} } = chart;\n";
+				echo "						ctx.font = chart_text_size + ' ' + chart_text_font;\n";
+				echo "						ctx.textBaseline = 'middle';\n";
+				echo "						ctx.textAlign = 'center';\n";
+				echo "						ctx.fillStyle = '".$dashboard_number_text_color."';\n";
+				echo "						ctx.fillText(options.text, width / 2, top + (height / 2));\n";
+				echo "						ctx.save();\n";
+				echo "					}\n";
+				echo "				}]\n";
+				echo "			}\n";
+				echo "		);\n";
+				echo "	</script>\n";
 				//echo "<span class='hud_stat' style='color: $dashboard_number_text_color; padding-bottom: 27px;'>$total_running_maintenance_apps / $total_maintenance_apps</span>";
 			}
-			if ($dashboard_chart_type === 'none') {
+			if ($dashboard_chart_type === 'number') {
 				//echo "<script src='/app/maintenance/resources/javascript/maintenance_chart.js'></script>";
-				echo "<span class='hud_stat' style='color: $dashboard_number_text_color; padding-bottom: 27px;'>$total_running_maintenance_apps / $total_maintenance_apps</span>";
+				echo "<span class='hud_stat'>$total_running_maintenance_apps / $total_maintenance_apps</span>";
 			}
 		echo "</div>";
 		//form for maintenance changes
