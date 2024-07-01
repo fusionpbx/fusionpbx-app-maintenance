@@ -185,7 +185,7 @@ if (permission_exists('maintenance_view')) {
 	echo "	<div class='hud_content' onclick=\"$('#hud_maintenance_details').slideToggle('fast'); toggle_grid_row_end('Maintenance')\">";
 	echo "		<span class='hud_title' onclick=\"document.location.href='/app/maintenance/maintenance.php'\">".$text['label-maintenance']."</span>";
 	echo "		<script src='/app/maintenance/resources/javascript/maintenance_functions.js'></script>";
-	if ($dashboard_chart_type == 'doughnut') {
+	if ($dashboard_chart_type === 'doughnut') {
 		//add an event listener for showing and hiding the days input box
 		echo "	<div class='hud_chart' style='width: 250px;'><canvas id='maintenance_chart'></canvas></div>";
 		echo "	<script>\n";
@@ -236,10 +236,8 @@ if (permission_exists('maintenance_view')) {
 		echo "			}\n";
 		echo "		);\n";
 		echo "	</script>\n";
-		/**/
 	}
-	if ($dashboard_chart_type == 'number') {
-		//echo "<script src='/app/maintenance/resources/javascript/maintenance_chart.js'></script>";
+	if ($dashboard_chart_type === 'number') {
 		echo "	<span class='hud_stat'>$total_running_maintenance_apps / $total_maintenance_apps</span>";
 	}
 	echo "	</div>";
