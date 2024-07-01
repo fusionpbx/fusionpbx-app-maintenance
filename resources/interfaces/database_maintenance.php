@@ -7,3 +7,5 @@
 interface database_maintenance {
 	public static function database_maintenance(settings $settings): void;
 }
+
+?>

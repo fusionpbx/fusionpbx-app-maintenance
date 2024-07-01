@@ -38,3 +38,5 @@ try {
 	echo $t->getMessage();
 	exit(1);
 }
+
+?>

@@ -280,3 +280,5 @@ class maintenance {
 		return $found_classes;
 	}
 }
+
+?>

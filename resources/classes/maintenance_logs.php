@@ -268,3 +268,5 @@ class maintenance_logs {
 		}
 	}
 }
+
+?>

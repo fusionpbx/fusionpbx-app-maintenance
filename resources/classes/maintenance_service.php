@@ -620,3 +620,5 @@ class maintenance_service extends service {
 		return floor(self::weeks_since_modified($file) / 52);
 	}
 }
+
+?>

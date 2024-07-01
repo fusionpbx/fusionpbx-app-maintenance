@@ -44,3 +44,5 @@ if ($domains_processed == 1) {
 		maintenance::app_defaults($database);
 	}
 }
+
+?>

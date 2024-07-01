@@ -177,7 +177,6 @@ if (permission_exists('maintenance_show_all') && $show_all) {
 	$sql .= " where domain_setting_category = 'maintenance'";
 	$sql .= " and (domain_setting_subcategory like '%_database_retention_days' or domain_setting_subcategory like '%_filesystem_retention_days')";
 	$sql .= " and domain_uuid = '$domain_uuid'";
-	//filter based on search
 	if (!empty($search)) {
 		$search_param = "%$search%";
 		$sql .= " and domain_setting_subcategory like :search";
@@ -187,7 +186,7 @@ if (permission_exists('maintenance_show_all') && $show_all) {
 		$sql .= limit_offset($rows_per_page, $offset);
 	}
 
-	$result = $database->execute($sql, $parameters, 'all');
+	$result = $database->execute($sql, $parameters ?? null, 'all');
 
 	if (!empty($result)) {
 		foreach ($result as $row) {
@@ -229,120 +228,128 @@ require_once dirname(__DIR__, 2) . '/resources/header.php';
 
 $document['title'] = $text['title-maintenance'];
 
-	echo "<div class='action_bar' id='action_bar'>";
-	echo "<div class='heading'><b>Maintenance (" . count($classes) . ")</b></div>";
-	echo "<div class='actions'>";
-		echo button::create(['type'=>'button','label'=>$text['button-logs'],'icon'=>'fas fa-scroll fa-fw','id'=>'btn_logs', 'link'=>'maintenance_logs.php']);
-		//show all
-		if (!$show_all) {
-			echo button::create(['type'=>'button','alt'=>$text['button-show_all']??'Show All','label'=>$text['button-show_all']??'Show All','class'=>'btn btn-default','icon'=>$_SESSION['theme']['button_icon_all']??'globe','link'=>(empty($url_params) ? '?show=all' : $url_params . '&show=all')]);
+echo "<div class='action_bar' id='action_bar'>";
+echo "	<div class='heading'><b>Maintenance (".count($classes).")</b></div>";
+echo "	<div class='actions'>";
+echo button::create(['type'=>'button','label'=>$text['button-logs'],'icon'=>'fas fa-scroll fa-fw','id'=>'btn_logs', 'link'=>'maintenance_logs.php']);
+//show all
+if (!$show_all) {
+	echo button::create(['type'=>'button','alt'=>$text['button-show_all']??'Show All','label'=>$text['button-show_all']??'Show All','class'=>'btn btn-default','icon'=>$_SESSION['theme']['button_icon_all']??'globe','link'=>(empty($url_params) ? '?show=all' : $url_params . '&show=all')]);
+}
+//search form
+echo "		<form id='form_search' class='inline' method='get'>";
+if (!empty($page)) {
+	echo "		<input name='page' type=hidden value='$page'>";
+}
+if ($show_all) {
+	echo "		<input name='show' type=hidden value='all'>";
+}
+echo "			<input type='text' class='txt list-search' name='search' id='search' value=\"".escape($search)."\" placeholder=\"".$text['label-search']."\" onkeydown=''>";
+echo button::create(['label'=>$text['button-search'],'icon'=>$_SESSION['theme']['button_icon_search'],'type'=>'submit','id'=>'btn_search']);
+echo "		</form>";
+echo "	</div>";
+
+//javascript modal boxes
+echo modal::create(['id'=>'modal-copy','type'=>'copy','actions'=> button::create(['type'=>'button','label'=>$text['button-continue'],'icon'=>'check','id'=>'btn_copy','style'=>'float: right; margin-left: 15px;','collapse'=>'never','onclick'=>"modal_close(); list_action_set('copy'); list_form_submit('form_list');"])]);
+echo modal::create(['id'=>'modal-delete','type'=>'delete','actions'=> button::create(['type'=>'button','label'=>$text['button-continue'],'icon'=>'check','id'=>'btn_delete','style'=>'float: right; margin-left: 15px;','collapse'=>'never','onclick'=>"modal_close(); list_action_set('delete'); list_form_submit('form_list');"])]);
+echo modal::create(['id'=>'modal-toggle','type'=>'toggle','actions'=> button::create(['type'=>'button','label'=>$text['button-continue'],'icon'=>'check','id'=>'btn_toggle','style'=>'float: right; margin-left: 15px;','collapse'=>'never','onclick'=>"modal_close(); list_action_set('toggle'); list_form_submit('form_list');"])]);
+
+echo "	<div style='clear: both;'></div>";
+echo "	<br/><br/>";
+echo "	<form id='form_list' method='post'>";
+echo "		<input type='hidden' id='action' name='action' value=''>";
+echo "		<input type='hidden' name='search' value=\"".escape($search)."\">";
+echo "		<table class='list'>";
+echo "			<tr class='list-header'>";
+echo "				<th>Name</th>";
+if (permission_exists('maintenance_show_all')) {
+	echo "			<th>Domain</th>";
+}
+echo "				<th>Database Enabled</th>";
+echo "				<th>Retention Days</th>";
+echo "				<th>File System Enabled</th>";
+echo "				<th>Retention Days</th>";
+echo "			</tr>";
+
+//list all maintenance applications from the defaults settings for global and each domain and show if they are enabled or disabled
+foreach ($maintenance_apps as $class => $app_settings) {
+	//make the class name more user friendly
+	$display_name = ucwords(str_replace('_', ' ', $class));
+
+	//display global first
+	if ((isset($app_settings['database_maintenance']['global']) || isset($app_settings['filesystem_maintenance']['global'])) && permission_exists('maintenance_show_all')) {
+		echo "<tr class='list-row' style=''>";
+		echo "	<td>$display_name</td>";
+		echo "	<td>".$text['label-global']."</td>";
+		if (isset($app_settings['database_maintenance']['global'])) {
+			$enabled = $app_settings['database_maintenance']['global']['default_setting_enabled'] ? $text['label-yes'] : $text['label-no'];
+			$value = $app_settings['database_maintenance']['global']['default_setting_value'];
+			echo "<td>$enabled</td>";
+			echo "<td>$value</td>";
+		} else {
+			echo "<td>&nbsp;</td>";
+			echo "<td>&nbsp;</td>";
 		}
-		//search form
-		echo "<form id='form_search' class='inline' method='get'>";
-			if (!empty($page)) {
-				echo "<input name='page' type=hidden value='$page'>";
-			}
-			if ($show_all) {
-				echo "<input name='show' type=hidden value='all'>";
-			}
-			echo "<input type='text' class='txt list-search' name='search' id='search' value=\"".escape($search)."\" placeholder=\"".$text['label-search']."\" onkeydown=''>";
-			echo button::create(['label'=>$text['button-search'],'icon'=>$_SESSION['theme']['button_icon_search'],'type'=>'submit','id'=>'btn_search']);
-		echo "</form>";
-	echo "</div>";
+		if (isset($app_settings['filesystem_maintenance']['global'])) {
+			$enabled = $app_settings['filesystem_maintenance']['global']['default_setting_enabled'] ? $text['label-yes'] : $text['label-no'];
+			$value = $app_settings['filesystem_maintenance']['global']['default_setting_value'];
+			echo "<td>$enabled</td>";
+			echo "<td>$value</td>";
+		} else {
+			echo "<td>&nbsp;</td>";
+			echo "<td>&nbsp;</td>";
+		}
+		echo "</tr>";
+	}
+	if (isset($app_settings['database_maintenance']) || isset($app_settings['filesystem_maintenance'])) {
+		//get all domains with database traits
+		$database_domain_uuids = array_keys($app_settings['database_maintenance'] ?? []);
 
-	//javascript modal boxes
-	echo modal::create(['id'=>'modal-copy','type'=>'copy','actions'=> button::create(['type'=>'button','label'=>$text['button-continue'],'icon'=>'check','id'=>'btn_copy','style'=>'float: right; margin-left: 15px;','collapse'=>'never','onclick'=>"modal_close(); list_action_set('copy'); list_form_submit('form_list');"])]);
-	echo modal::create(['id'=>'modal-delete','type'=>'delete','actions'=> button::create(['type'=>'button','label'=>$text['button-continue'],'icon'=>'check','id'=>'btn_delete','style'=>'float: right; margin-left: 15px;','collapse'=>'never','onclick'=>"modal_close(); list_action_set('delete'); list_form_submit('form_list');"])]);
-	echo modal::create(['id'=>'modal-toggle','type'=>'toggle','actions'=> button::create(['type'=>'button','label'=>$text['button-continue'],'icon'=>'check','id'=>'btn_toggle','style'=>'float: right; margin-left: 15px;','collapse'=>'never','onclick'=>"modal_close(); list_action_set('toggle'); list_form_submit('form_list');"])]);
+		//get all domains with filesystem traits
+		$filesystem_domain_uuids = array_keys($app_settings['filesystem_maintenance'] ?? []);
 
-	echo "<div style='clear: both;'></div>";
-	echo "<br/><br/>";
-	echo "<form id='form_list' method='post'>";
-		echo "<input type='hidden' id='action' name='action' value=''>";
-		echo "<input type='hidden' name='search' value=\"".escape($search)."\">";
-		echo "<table class='list'>";
-			echo "<tr class='list-header'>";
-				echo "<th>Name</th>";
-				if (permission_exists('maintenance_show_all')) {
-					echo "<th>Domain</th>";
-				}
-				echo "<th>Database Enabled</th>";
-				echo "<th>Retention Days</th>";
-				echo "<th>File System Enabled</th>";
-				echo "<th>Retention Days</th>";
+		//combine database and filesystem domain_uuids without duplicates
+		$domain_uuids = $database_domain_uuids + $filesystem_domain_uuids;
+
+		//loop through domains that have the database and filesystem traits
+		foreach ($domain_uuids as $domain_uuid) {
+			//skip global it has already been done
+			if ($domain_uuid === 'global') {
+				continue;
+			}
+			echo "<tr class='list-row' style=''>";
+			echo "	<td>$display_name</td>";
+			if (permission_exists('maintenance_show_all')) {
+				echo "<td>".$domain_names[$domain_uuid]."</td>";
+			}
+			if (isset($app_settings['database_maintenance'][$domain_uuid])) {
+				$enabled = $app_settings['database_maintenance'][$domain_uuid]['domain_setting_enabled'] ? $text['label-yes'] : $text['label-no'];
+				$value = $app_settings['database_maintenance'][$domain_uuid]['domain_setting_value'];
+				echo "<td>$enabled</td>";
+				echo "<td>$value</td>";
+			} else {
+				echo "<td>&nbsp;</td>";
+				echo "<td>&nbsp;</td>";
+			}
+			if (isset($app_settings['filesystem_maintenance'][$domain_uuid])) {
+				$enabled = $app_settings['filesystem_maintenance'][$domain_uuid]['domain_setting_enabled'] ? $text['label-yes'] : $text['label-no'];
+				$value = $app_settings['filesystem_maintenance'][$domain_uuid]['domain_setting_value'];
+				echo "<td>$enabled</td>";
+				echo "<td>$value</td>";
+			} else {
+				echo "<td>&nbsp;</td>";
+				echo "<td>&nbsp;</td>";
+			}
 			echo "</tr>";
-			//list all maintenance applications from the defaults settings for global and each domain and show if they are enabled or disabled
-			foreach ($maintenance_apps as $class => $app_settings) {
-				//make the class name more user friendly
-				$display_name = ucwords(str_replace('_', ' ', $class));
-				//display global first
-				if ((isset($app_settings['database_maintenance']['global']) || isset($app_settings['filesystem_maintenance']['global'])) && permission_exists('maintenance_show_all')) {
-					echo "<tr class='list-row' style=''>";
-						echo "<td>$display_name</td>";
-							echo "<td>" . $text['label-global'] . "</td>";
-						if (isset($app_settings['database_maintenance']['global'])) {
-							$enabled = $app_settings['database_maintenance']['global']['default_setting_enabled'] ? $text['label-yes'] : $text['label-no'];
-							$value = $app_settings['database_maintenance']['global']['default_setting_value'];
-							echo "<td>$enabled</td>";
-							echo "<td>$value</td>";
-						} else {
-							echo "<td>&nbsp;</td>";
-							echo "<td>&nbsp;</td>";
-						}
-						if (isset($app_settings['filesystem_maintenance']['global'])) {
-							$enabled = $app_settings['filesystem_maintenance']['global']['default_setting_enabled'] ? $text['label-yes'] : $text['label-no'];
-							$value = $app_settings['filesystem_maintenance']['global']['default_setting_value'];
-							echo "<td>$enabled</td>";
-							echo "<td>$value</td>";
-						} else {
-							echo "<td>&nbsp;</td>";
-							echo "<td>&nbsp;</td>";
-						}
-					echo "</tr>";
-				}
-				if (isset($app_settings['database_maintenance']) || isset($app_settings['filesystem_maintenance'])) {
-					//get all domains with database traits
-					$database_domain_uuids = array_keys($app_settings['database_maintenance'] ?? []);
-					//get all domains with filesystem traits
-					$filesystem_domain_uuids = array_keys($app_settings['filesystem_maintenance'] ?? []);
-					//combine database and filesystem domain_uuids without duplicates
-					$domain_uuids = $database_domain_uuids + $filesystem_domain_uuids;
-					//loop through domains that have the database and filesystem traits
-					foreach ($domain_uuids as $domain_uuid) {
-						//skip global it has already been done
-						if ($domain_uuid === 'global') {
-							continue;
-						}
-						echo "<tr class='list-row' style=''>";
-							echo "<td>$display_name</td>";
-							if (permission_exists('maintenance_show_all')) {
-								echo "<td>" . $domain_names[$domain_uuid] . "</td>";
-							}
-							if (isset($app_settings['database_maintenance'][$domain_uuid])) {
-								$enabled = $app_settings['database_maintenance'][$domain_uuid]['domain_setting_enabled'] ? $text['label-yes'] : $text['label-no'];
-								$value = $app_settings['database_maintenance'][$domain_uuid]['domain_setting_value'];
-								echo "<td>$enabled</td>";
-								echo "<td>$value</td>";
-							} else {
-								echo "<td>&nbsp;</td>";
-								echo "<td>&nbsp;</td>";
-							}
-							if (isset($app_settings['filesystem_maintenance'][$domain_uuid])) {
-								$enabled = $app_settings['filesystem_maintenance'][$domain_uuid]['domain_setting_enabled'] ? $text['label-yes'] : $text['label-no'];
-								$value = $app_settings['filesystem_maintenance'][$domain_uuid]['domain_setting_value'];
-								echo "<td>$enabled</td>";
-								echo "<td>$value</td>";
-							} else {
-								echo "<td>&nbsp;</td>";
-								echo "<td>&nbsp;</td>";
-							}
-						echo "</tr>";
-					}
-				}
-			}
-		echo "</table>";
-		echo "<input type='hidden' name='".$token['name']."' value='".$token['hash']."'>";
-	echo "</form>";
+		}
+	}
+}
+echo "		</table>";
+echo "		<input type='hidden' name='".$token['name']."' value='".$token['hash']."'>";
+echo "	</form>";
 echo "</div>";
 
+//include the footer
 require_once dirname(__DIR__, 2) . '/resources/footer.php';
+
+?>
