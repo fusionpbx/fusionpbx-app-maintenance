@@ -185,3 +185,21 @@
 	$apps[$x]['default_settings'][$y]['default_setting_value'] = "maintenance_logs";
 	$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "true";
 	$apps[$x]['default_settings'][$y]['default_setting_description'] = "Maintenance log application to remove old entries.";
+	$y++;
+	$apps[$x]['default_settings'][$y]['default_setting_uuid'] = "074addbd-c010-49f8-bb84-72f14d4ed197";
+	$apps[$x]['default_settings'][$y]['default_setting_category'] = "theme";
+	$apps[$x]['default_settings'][$y]['default_setting_subcategory'] = "dashboard_maintenance_chart_main_color";
+	$apps[$x]['default_settings'][$y]['default_setting_name'] = "text";
+	$apps[$x]['default_settings'][$y]['default_setting_value'] = "#2a9df4";
+	$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "false";
+	$apps[$x]['default_settings'][$y]['default_setting_description'] = "";
+	$y++;
+	$apps[$x]['default_settings'][$y]['default_setting_uuid'] = "2b39f31a-69ad-4083-98c7-e97f50bd30ce";
+	$apps[$x]['default_settings'][$y]['default_setting_category'] = "theme";
+	$apps[$x]['default_settings'][$y]['default_setting_subcategory'] = "dashboard_maintenance_chart_sub_color";
+	$apps[$x]['default_settings'][$y]['default_setting_name'] = "text";
+	$apps[$x]['default_settings'][$y]['default_setting_value'] = "#d4d4d4";
+	$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "false";
+	$apps[$x]['default_settings'][$y]['default_setting_description'] = "";
+
+?>

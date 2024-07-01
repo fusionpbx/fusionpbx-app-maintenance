@@ -182,18 +182,67 @@
 if (permission_exists('maintenance_view')) {
 	//show the box
 	echo "<div class='hud_box'>";
-		echo "<div class='hud_container' onclick=\"$('#hud_maintenance_details').slideToggle('fast'); toggle_grid_row_end('Maintenance')\">";
-			echo "<span class='hud_title' onclick=\"document.location.href='/app/maintenance/maintenance.php'\">Maintenance</span>";
+		echo "<div class='hud_content' onclick=\"$('#hud_maintenance_details').slideToggle('fast'); toggle_grid_row_end('Maintenance')\">";
+			echo "<span class='hud_title' onclick=\"document.location.href='/app/maintenance/maintenance.php'\">".$text['label-maintenance']."</span>";
 			echo "<script src='/app/maintenance/resources/javascript/maintenance_functions.js'></script>";
 			if ($dashboard_chart_type === 'doughnut') {
 				//add an event listener for showing and hiding the days input box
-				echo "<div style='width: 150px; height: 150px; padding-top: 7px;'><canvas id='maintenance_chart'></canvas></div>";
-				echo "<script src='/app/maintenance/resources/javascript/maintenance_chart.js'></script>";
+				?>
+				<div class='hud_chart' style='width: 250px;'><canvas id='maintenance_chart'></canvas></div>
+				<script>
+					const maintenance_chart = new Chart(
+						document.getElementById('maintenance_chart').getContext('2d'),
+						{
+							type: 'doughnut',
+							data: {
+								labels: ['<?php echo $text['label-running']; ?>: <?php echo $total_running_maintenance_apps; ?>', '<?php echo $text['label-total']; ?>: <?php echo $total_maintenance_apps; ?>'],
+								datasets: [{
+									data: [<?php echo $total_running_maintenance_apps; ?>, <?php echo $total_maintenance_apps; ?>],
+									backgroundColor: [
+										'<?php echo ($settings->get('theme', 'dashboard_maintenance_chart_main_color') ?? "#2a9df4"); ?>',
+										'<?php echo ($settings->get('theme', 'dashboard_maintenance_chart_sub_color') ?? "#d4d4d4"); ?>'
+									],
+									borderColor: '<?php echo $settings->get('theme', 'dashboard_chart_border_color'); ?>',
+									borderWidth: '<?php echo $settings->get('theme', 'dashboard_chart_border_width'); ?>',
+								}]
+							},
+							options: {
+								plugins: {
+									chart_number: {
+										text: '<?php echo $total_running_maintenance_apps; ?>'
+									},
+									legend: {
+										display: true,
+										position: 'right',
+										reverse: true,
+										labels: {
+											usePointStyle: true,
+											pointStyle: 'rect'
+										}
+									},
+								}
+							},
+							plugins: [{
+								id: 'chart_number',
+								beforeDraw(chart, args, options){
+									const {ctx, chartArea: {top, right, bottom, left, width, height} } = chart;
+									ctx.font = chart_text_size + ' ' + chart_text_font;
+									ctx.textBaseline = 'middle';
+									ctx.textAlign = 'center';
+									ctx.fillStyle = '<?php echo $dashboard_number_text_color; ?>';
+									ctx.fillText(options.text, width / 2, top + (height / 2));
+									ctx.save();
+								}
+							}]
+						}
+					);
+				</script>
+				<?php
 				//echo "<span class='hud_stat' style='color: $dashboard_number_text_color; padding-bottom: 27px;'>$total_running_maintenance_apps / $total_maintenance_apps</span>";
 			}
-			if ($dashboard_chart_type === 'none') {
+			if ($dashboard_chart_type === 'number') {
 				//echo "<script src='/app/maintenance/resources/javascript/maintenance_chart.js'></script>";
-				echo "<span class='hud_stat' style='color: $dashboard_number_text_color; padding-bottom: 27px;'>$total_running_maintenance_apps / $total_maintenance_apps</span>";
+				echo "<span class='hud_stat'>$total_running_maintenance_apps / $total_maintenance_apps</span>";
 			}
 		echo "</div>";
 		//form for maintenance changes
