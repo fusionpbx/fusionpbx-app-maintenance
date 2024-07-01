@@ -182,244 +182,243 @@
 if (permission_exists('maintenance_view')) {
 	//show the box
 	echo "<div class='hud_box'>";
-		echo "<div class='hud_content' onclick=\"$('#hud_maintenance_details').slideToggle('fast'); toggle_grid_row_end('Maintenance')\">";
-			echo "<span class='hud_title' onclick=\"document.location.href='/app/maintenance/maintenance.php'\">".$text['label-maintenance']."</span>";
-			echo "<script src='/app/maintenance/resources/javascript/maintenance_functions.js'></script>";
-			if ($dashboard_chart_type === 'doughnut') {
-				//add an event listener for showing and hiding the days input box
-				?>
-				<div class='hud_chart' style='width: 250px;'><canvas id='maintenance_chart'></canvas></div>
-				<script>
-					const maintenance_chart = new Chart(
-						document.getElementById('maintenance_chart').getContext('2d'),
-						{
-							type: 'doughnut',
-							data: {
-								labels: ['<?php echo $text['label-running']; ?>: <?php echo $total_running_maintenance_apps; ?>', '<?php echo $text['label-total']; ?>: <?php echo $total_maintenance_apps; ?>'],
-								datasets: [{
-									data: [<?php echo $total_running_maintenance_apps; ?>, <?php echo $total_maintenance_apps; ?>],
-									backgroundColor: [
-										'<?php echo ($settings->get('theme', 'dashboard_maintenance_chart_main_color') ?? "#2a9df4"); ?>',
-										'<?php echo ($settings->get('theme', 'dashboard_maintenance_chart_sub_color') ?? "#d4d4d4"); ?>'
-									],
-									borderColor: '<?php echo $settings->get('theme', 'dashboard_chart_border_color'); ?>',
-									borderWidth: '<?php echo $settings->get('theme', 'dashboard_chart_border_width'); ?>',
-								}]
-							},
-							options: {
-								plugins: {
-									chart_number: {
-										text: '<?php echo $total_running_maintenance_apps; ?>'
-									},
-									legend: {
-										display: true,
-										position: 'right',
-										reverse: true,
-										labels: {
-											usePointStyle: true,
-											pointStyle: 'rect'
-										}
-									},
-								}
-							},
-							plugins: [{
-								id: 'chart_number',
-								beforeDraw(chart, args, options){
-									const {ctx, chartArea: {top, right, bottom, left, width, height} } = chart;
-									ctx.font = chart_text_size + ' ' + chart_text_font;
-									ctx.textBaseline = 'middle';
-									ctx.textAlign = 'center';
-									ctx.fillStyle = '<?php echo $dashboard_number_text_color; ?>';
-									ctx.fillText(options.text, width / 2, top + (height / 2));
-									ctx.save();
-								}
-							}]
-						}
-					);
-				</script>
-				<?php
-				//echo "<span class='hud_stat' style='color: $dashboard_number_text_color; padding-bottom: 27px;'>$total_running_maintenance_apps / $total_maintenance_apps</span>";
+	echo "	<div class='hud_content' onclick=\"$('#hud_maintenance_details').slideToggle('fast'); toggle_grid_row_end('Maintenance')\">";
+	echo "		<span class='hud_title' onclick=\"document.location.href='/app/maintenance/maintenance.php'\">".$text['label-maintenance']."</span>";
+	echo "		<script src='/app/maintenance/resources/javascript/maintenance_functions.js'></script>";
+	if ($dashboard_chart_type == 'doughnut') {
+		//add an event listener for showing and hiding the days input box
+		echo "	<div class='hud_chart' style='width: 250px;'><canvas id='maintenance_chart'></canvas></div>";
+		echo "	<script>\n";
+		echo "		const maintenance_chart = new Chart(\n";
+		echo "			document.getElementById('maintenance_chart').getContext('2d'),\n";
+		echo "			{\n";
+		echo "				type: 'doughnut',\n";
+		echo "				data: {\n";
+		echo "					labels: ['".$text['label-running'].": ".$total_running_maintenance_apps."', '".$text['label-total'].": ".$total_maintenance_apps."'],\n";
+		echo "					datasets: [{\n";
+		echo "						data: [".$total_running_maintenance_apps.", ".$total_maintenance_apps."],\n";
+		echo "						backgroundColor: [\n";
+		echo "							'".($settings->get('theme', 'dashboard_maintenance_chart_main_color') ?? "#2a9df4")."',\n";
+		echo "							'".($settings->get('theme', 'dashboard_maintenance_chart_sub_color') ?? "#d4d4d4")."'\n";
+		echo "						],\n";
+		echo "						borderColor: '".$settings->get('theme', 'dashboard_chart_border_color')."',\n";
+		echo "						borderWidth: '".$settings->get('theme', 'dashboard_chart_border_width')."',\n";
+		echo "					}]\n";
+		echo "				},\n";
+		echo "				options: {\n";
+		echo "					plugins: {\n";
+		echo "						chart_number: {\n";
+		echo "							text: ".$total_running_maintenance_apps."\n";
+		echo "						},\n";
+		echo "						legend: {\n";
+		echo "							display: true,\n";
+		echo "							position: 'right',\n";
+		echo "							reverse: true,\n";
+		echo "							labels: {\n";
+		echo "								usePointStyle: true,\n";
+		echo "								pointStyle: 'rect'\n";
+		echo "							}\n";
+		echo "						},\n";
+		echo "					}\n";
+		echo "				},\n";
+		echo "				plugins: [{\n";
+		echo "					id: 'chart_number',\n";
+		echo "					beforeDraw(chart, args, options){\n";
+		echo "						const {ctx, chartArea: {top, right, bottom, left, width, height} } = chart;\n";
+		echo "						ctx.font = chart_text_size + ' ' + chart_text_font;\n";
+		echo "						ctx.textBaseline = 'middle';\n";
+		echo "						ctx.textAlign = 'center';\n";
+		echo "						ctx.fillStyle = '".$dashboard_number_text_color."';\n";
+		echo "						ctx.fillText(options.text, width / 2, top + (height / 2));\n";
+		echo "						ctx.save();\n";
+		echo "					}\n";
+		echo "				}]\n";
+		echo "			}\n";
+		echo "		);\n";
+		echo "	</script>\n";
+		/**/
+	}
+	if ($dashboard_chart_type == 'number') {
+		//echo "<script src='/app/maintenance/resources/javascript/maintenance_chart.js'></script>";
+		echo "	<span class='hud_stat'>$total_running_maintenance_apps / $total_maintenance_apps</span>";
+	}
+	echo "	</div>";
+	//form for maintenance changes
+	echo "	<form id='form_list_maintainers' name='form_list_maintainers' method='POST'>";
+	echo "		<div class='hud_details hud_box' id='hud_maintenance_details' style='text-align: right'>";
+	//save button for changes
+	echo "			<button type='button' alt='Save' title='Save' onclick=\"list_form_submit('form_list_maintainers');\" class='btn btn-default ' style='position: absolute; margin-top: -35px; margin-left: -72px;'><span class='fas fa-bolt fa-fw'></span><span class='button-label  pad'>Save</span></button>";
+	echo "			<table class='tr_hover' width='100%' cellpadding='0' cellspacing='0' border='0'>";
+	echo "				<tr style='position: -webkit-sticky; position: sticky; z-index: 5; top: 0; left: 2px;'>";
+	echo "					<th class='hud_heading' style='width: 40%;'>".($text['label-app'] ?? 'Application')."</th>";
+	echo "					<th class='hud_heading' style='width: 15%;'>".'Database'."</th>";
+	echo "					<th class='hud_heading' style='width: 15%;'>".'Days'."</th>";
+	echo "					<th class='hud_heading' style='width: 15%;'>".'Filesystem'."</th>";
+	echo "					<th class='hud_heading' style='width: 15%;'>".'Days'."</th>";
+	echo "				</tr>";
+
+	//iterate maintainers
+	foreach($maintainers as $x => $maintenance_app) {
+		$database_days = "";
+		$filesystem_days = "";
+		$database_category = '';
+		$database_subcategory = '';
+		$filesystem_category = '';
+		$filesystem_subcategory = '';
+		$filesystem_checkbox_state = CHECKBOX_HIDDEN;
+		$database_checkbox_state = CHECKBOX_HIDDEN;
+		$param = [];
+		if (class_exists($maintenance_app)) {
+			//check for database status
+			if (method_exists($maintenance_app, 'database_maintenance')) {
+				$database_category = 'maintenance';
+				$database_subcategory = $maintenance_app . '_database_retention_days';
+				$database_default_value = '30';
+				$database_days = $setting->get($database_category, $database_subcategory, '');
+				//uuid of setting
+				$database_setting_uuids = maintenance_service::find_uuid($database, $database_category, $database_subcategory);
+				$database_setting_uuid = $database_setting_uuids['uuid'];
+				$database_setting_table = $database_setting_uuids['table'];
+				if (empty($database_days)) {
+					$database_checkbox_state = CHECKBOX_UNCHECKED;
+				} else {
+					$database_checkbox_state = CHECKBOX_CHECKED;
+				}
 			}
-			if ($dashboard_chart_type === 'number') {
-				//echo "<script src='/app/maintenance/resources/javascript/maintenance_chart.js'></script>";
-				echo "<span class='hud_stat'>$total_running_maintenance_apps / $total_maintenance_apps</span>";
+
+			//check for filesystem status
+			if (method_exists($maintenance_app, 'filesystem_maintenance')) {
+				$filesystem_category = 'maintenance';
+				$filesystem_subcategory = $maintenance_app . '_filesystem_retention_days';
+				$filesystem_default_value = '30';
+				$filesystem_days = $setting->get($filesystem_category, $filesystem_subcategory, '');
+				//uuid of setting
+				$filesystem_setting_uuids = maintenance_service::find_uuid($database, $filesystem_category, $filesystem_subcategory);
+				$filesystem_setting_uuid = $filesystem_setting_uuids['uuid'];
+				$filesystem_setting_table = $filesystem_setting_uuids['table'];
+				if (empty($filesystem_days)) {
+					$filesystem_checkbox_state = CHECKBOX_UNCHECKED;
+				} else {
+					$filesystem_checkbox_state = CHECKBOX_CHECKED;
+				}
+			} else {
+				$filesystem_setting_uuid = '';
+				$filesystem_setting_table = '';
 			}
-		echo "</div>";
-		//form for maintenance changes
-		echo "<form id='form_list_maintainers' name='form_list_maintainers' method='POST'>";
-			echo "<div class='hud_details hud_box' id='hud_maintenance_details' style='text-align: right'>";
-				//save button for changes
-				echo "<button type='button' alt='Save' title='Save' onclick=\"list_form_submit('form_list_maintainers');\" class='btn btn-default ' style='position: absolute; margin-top: -35px; margin-left: -72px;'><span class='fas fa-bolt fa-fw'></span><span class='button-label  pad'>Save</span></button>";
-				echo "<table class='tr_hover' width='100%' cellpadding='0' cellspacing='0' border='0'>";
-					echo "<tr style='position: -webkit-sticky; position: sticky; z-index: 5; top: 0; left: 2px;'>";
-						echo "<th class='hud_heading' style='width: 40%;'>".($text['label-app'] ?? 'Application')."</th>";
-						echo "<th class='hud_heading' style='width: 15%;'>".'Database'."</th>";
-						echo "<th class='hud_heading' style='width: 15%;'>".'Days'."</th>";
-						echo "<th class='hud_heading' style='width: 15%;'>".'Filesystem'."</th>";
-						echo "<th class='hud_heading' style='width: 15%;'>".'Days'."</th>";
-					echo "</tr>";
-
-					//iterate maintainers
-					foreach($maintainers as $x => $maintenance_app) {
-						$database_days = "";
-						$filesystem_days = "";
-						$database_category = '';
-						$database_subcategory = '';
-						$filesystem_category = '';
-						$filesystem_subcategory = '';
-						$filesystem_checkbox_state = CHECKBOX_HIDDEN;
-						$database_checkbox_state = CHECKBOX_HIDDEN;
-						$param = [];
-						if (class_exists($maintenance_app)) {
-							//check for database status
-							if (method_exists($maintenance_app, 'database_maintenance')) {
-								$database_category = 'maintenance';
-								$database_subcategory = $maintenance_app . '_database_retention_days';
-								$database_default_value = '30';
-								$database_days = $setting->get($database_category, $database_subcategory, '');
-								//uuid of setting
-								$database_setting_uuids = maintenance_service::find_uuid($database, $database_category, $database_subcategory);
-								$database_setting_uuid = $database_setting_uuids['uuid'];
-								$database_setting_table = $database_setting_uuids['table'];
-								if (empty($database_days)) {
-									$database_checkbox_state = CHECKBOX_UNCHECKED;
-								} else {
-									$database_checkbox_state = CHECKBOX_CHECKED;
-								}
-							}
-
-							//check for filesystem status
-							if (method_exists($maintenance_app, 'filesystem_maintenance')) {
-								$filesystem_category = 'maintenance';
-								$filesystem_subcategory = $maintenance_app . '_filesystem_retention_days';
-								$filesystem_default_value = '30';
-								$filesystem_days = $setting->get($filesystem_category, $filesystem_subcategory, '');
-								//uuid of setting
-								$filesystem_setting_uuids = maintenance_service::find_uuid($database, $filesystem_category, $filesystem_subcategory);
-								$filesystem_setting_uuid = $filesystem_setting_uuids['uuid'];
-								$filesystem_setting_table = $filesystem_setting_uuids['table'];
-								if (empty($filesystem_days)) {
-									$filesystem_checkbox_state = CHECKBOX_UNCHECKED;
-								} else {
-									$filesystem_checkbox_state = CHECKBOX_CHECKED;
-								}
-							} else {
-								$filesystem_setting_uuid = '';
-								$filesystem_setting_table = '';
-							}
-						}
-
-						//set status and color for database maintenance apps
-						if ($database_checkbox_state === CHECKBOX_CHECKED) {
-							$database_checked = "checked='checked'";
-						}
-						else {
-							$database_checked = '';
-						}
-						//display the maintanence application
-						echo "<tr>";
-							$display_name = ucwords(str_replace('_', ' ', $maintenance_app));
-							echo "<td valign='top' class='".$row_style[$c]." hud_text'>$display_name</td>";
-							//
-							// Database apps
-							//
-							//hide or show database maintenance ability
-							if ($database_checkbox_state !== CHECKBOX_HIDDEN) {
-								//enable or disable checkbox
-								if (substr($setting->get('theme','input_toggle_style', ''), 0, 6) == 'switch') {
-									echo "<td valign='top' class='".$row_style[$c]." hud_text input tr_link_void' style='width: 1%; text-align: center;'>";
-										echo "<label class='switch'>";
-											echo "<input type='checkbox' name='database_retention_days[$x][status]' value='true' $database_checked onclick=\"this.checked ? show_input_box('database_days_$x') : hide_input_box('database_days_$x');\">";
-											echo "<span class='slider'></span>";
-										echo "</label>";
-									echo "</td>";
-								} else {
-									echo "<td valign='top' class='".$row_style[$c]." hud_text'>$database_status</td>";
-								}
-							} else {
-								//not a database maintenance application
-								echo "<td valign='top' class='".$row_style[$c]." hud_text'>&nbsp;</td>";
-							}
-							//database days input box
-							echo "<td valign='top' class='".$row_style[$c]." hud_text input tr_link_void'>";
-								//hide the input box if we are hiding the checkbox
-								if ($database_checkbox_state !== CHECKBOX_CHECKED) {
-									$database_input_days_style = " display: none;";
-								} else {
-									$database_input_days_style = "";
-								}
-								//check for permission
-								if (permission_exists('maintenance_edit')) {
-									echo "<input class='formfld' style='width: 20%; min-width: 40px;$database_input_days_style' type='text' name='database_retention_days[$x][days]' id='database_days_$x' placeholder='days' maxlength='255' value='" . ($database_checkbox_state === CHECKBOX_CHECKED ? $database_days : $database_default_value) . "'>";
-									echo "<input type='hidden' id='database_uuid_$x' name='database_retention_days[$x][uuid]' value='$database_setting_uuid'>";
-									echo "<input type='hidden' id='database_category_$x' name='database_retention_days[$x][category]' value='$database_category'>";
-									echo "<input type='hidden' id='database_subcategory_$x' name='database_retention_days[$x][subcategory]' value='$database_subcategory'>";
-									echo "<input type='hidden' id='database_type_$x' name='database_retention_days[$x][type]' value='$database_setting_table'>";
-								} else {
-									echo "$database_days";
-								}
-							echo "</td>";
-							//set the checkboxes to checked
-							if ($filesystem_checkbox_state === CHECKBOX_CHECKED) {
-								$filesystem_checked = "checked='checked'";
-							}
-							else {
-								$filesystem_checked = '';
-							}
-							//
-							//filesystem apps
-							//
-							echo "<td valign='top' class='".$row_style[$c]." hud_text input tr_link_void' style='width: 1%; text-align: center;'>";
-							if ($filesystem_checkbox_state !== CHECKBOX_HIDDEN) {
-								if (substr($setting->get('theme','input_toggle_style', ''), 0, 6) == 'switch') {
-										echo "<label class='switch'>";
-										echo "<input type='checkbox' locked id='filesystem_enabled_$x' name='filesystem_retention_days[$x][status]' value='true' $filesystem_checked onclick=\"this.checked ? show_input_box('filesystem_days_$x') : hide_input_box('filesystem_days_$x');\">";
-										echo "<span class='slider'></span>";
-										echo "</label>";
-								}
-								else {
-									echo "<td valign='top' class='".$row_style[$c]." hud_text'>";
-									if ($show_filesystem_days) {
-										echo $filesystem_enabled;
-									} else {
-										echo "&nbsp;";
-									}
-									echo "</td>";
-								}
-							} else {
-								echo "&nbsp;";
-							}
-							echo "</td>";
-							//filesystem days input box
-							echo "<td valign='top' class='".$row_style[$c]." hud_text input tr_link_void'>";
-								//hide the input box if we are hiding the checkbox
-								if ($filesystem_checkbox_state !== CHECKBOX_CHECKED) {
-									$filesystem_input_days_style = " display: none;";
-								} else {
-									$filesystem_input_days_style = "";
-								}
-								if (permission_exists('maintenance_edit')) {
-									echo "<input class='formfld' style='width: 20%; min-width: 40px;$filesystem_input_days_style' type='text' name='filesystem_retention_days[$x][days]' id='filesystem_days_$x' placeholder='days' maxlength='255' value='$filesystem_days'>";
-									echo "<input type='hidden' id='filesystem_uuid_$x' name='filesystem_retention_days[$x][uuid]' value='$filesystem_setting_uuid'>";
-									echo "<input type='hidden' id='filesystem_category_$x' name='filesystem_retention_days[$x][category]' value='$filesystem_category'>";
-									echo "<input type='hidden' id='filesystem_subcategory_$x' name='filesystem_retention_days[$x][subcategory]' value='$filesystem_subcategory'>";
-									echo "<input type='hidden' id='filesystem_type_$x' name='filesystem_retention_days[$x][type]' value='$filesystem_setting_table'>";
-								} else {
-									echo "$filesystem_days";
-								}
-							echo "</td>";
-						echo "</tr>";
-						$c = !$c;
-					}
-				echo "</table>";
-			echo "</div>";
-
-		//form save submit
-		if (permission_exists('maintenance_edit')) {
-			echo "<input type='hidden' name='".$token['name']."' value='".$token['hash']."'>";
 		}
-		echo "</form>";
-	echo "<span class='hud_expander' onclick=\"$('#hud_maintenance_details').slideToggle('fast'); toggle_grid_row_end('Maintenance')\"><span class='fas fa-ellipsis-h'></span></span>";
+
+		//set status and color for database maintenance apps
+		if ($database_checkbox_state === CHECKBOX_CHECKED) {
+			$database_checked = "checked='checked'";
+		}
+		else {
+			$database_checked = '';
+		}
+		//display the maintanence application
+		echo "<tr>";
+		$display_name = ucwords(str_replace('_', ' ', $maintenance_app));
+		echo "	<td valign='top' class='".$row_style[$c]." hud_text'>$display_name</td>";
+		//
+		// Database apps
+		//
+		//hide or show database maintenance ability
+		if ($database_checkbox_state !== CHECKBOX_HIDDEN) {
+			//enable or disable checkbox
+			if (substr($setting->get('theme','input_toggle_style', ''), 0, 6) == 'switch') {
+				echo "<td valign='top' class='".$row_style[$c]." hud_text input tr_link_void' style='width: 1%; text-align: center;'>";
+				echo "	<label class='switch'>";
+				echo "		<input type='checkbox' name='database_retention_days[$x][status]' value='true' $database_checked onclick=\"this.checked ? show_input_box('database_days_$x') : hide_input_box('database_days_$x');\">";
+				echo "		<span class='slider'></span>";
+				echo "	</label>";
+				echo "</td>";
+			} else {
+				echo "<td valign='top' class='".$row_style[$c]." hud_text'>$database_status</td>";
+			}
+		} else {
+			//not a database maintenance application
+			echo "<td valign='top' class='".$row_style[$c]." hud_text'>&nbsp;</td>";
+		}
+		//database days input box
+		echo "	<td valign='top' class='".$row_style[$c]." hud_text input tr_link_void'>";
+		//hide the input box if we are hiding the checkbox
+		if ($database_checkbox_state !== CHECKBOX_CHECKED) {
+			$database_input_days_style = " display: none;";
+		} else {
+			$database_input_days_style = "";
+		}
+		//check for permission
+		if (permission_exists('maintenance_edit')) {
+			echo "<input class='formfld' style='width: 20%; min-width: 40px;$database_input_days_style' type='text' name='database_retention_days[$x][days]' id='database_days_$x' placeholder='days' maxlength='255' value='" . ($database_checkbox_state === CHECKBOX_CHECKED ? $database_days : $database_default_value) . "'>";
+			echo "<input type='hidden' id='database_uuid_$x' name='database_retention_days[$x][uuid]' value='$database_setting_uuid'>";
+			echo "<input type='hidden' id='database_category_$x' name='database_retention_days[$x][category]' value='$database_category'>";
+			echo "<input type='hidden' id='database_subcategory_$x' name='database_retention_days[$x][subcategory]' value='$database_subcategory'>";
+			echo "<input type='hidden' id='database_type_$x' name='database_retention_days[$x][type]' value='$database_setting_table'>";
+		} else {
+			echo "$database_days";
+		}
+		echo "	</td>";
+		//set the checkboxes to checked
+		if ($filesystem_checkbox_state === CHECKBOX_CHECKED) {
+			$filesystem_checked = "checked='checked'";
+		}
+		else {
+			$filesystem_checked = '';
+		}
+		//
+		//filesystem apps
+		//
+		echo "	<td valign='top' class='".$row_style[$c]." hud_text input tr_link_void' style='width: 1%; text-align: center;'>";
+		if ($filesystem_checkbox_state !== CHECKBOX_HIDDEN) {
+		if (substr($setting->get('theme','input_toggle_style', ''), 0, 6) == 'switch') {
+			echo "<label class='switch'>";
+			echo "<input type='checkbox' locked id='filesystem_enabled_$x' name='filesystem_retention_days[$x][status]' value='true' $filesystem_checked onclick=\"this.checked ? show_input_box('filesystem_days_$x') : hide_input_box('filesystem_days_$x');\">";
+			echo "<span class='slider'></span>";
+			echo "</label>";
+		}
+		else {
+			echo "<td valign='top' class='".$row_style[$c]." hud_text'>";
+			if ($show_filesystem_days) {
+				echo $filesystem_enabled;
+			} else {
+				echo "&nbsp;";
+			}
+			echo "</td>";
+		}
+		} else {
+			echo "&nbsp;";
+		}
+		echo "	</td>";
+		//filesystem days input box
+		echo "	<td valign='top' class='".$row_style[$c]." hud_text input tr_link_void'>";
+		//hide the input box if we are hiding the checkbox
+		if ($filesystem_checkbox_state !== CHECKBOX_CHECKED) {
+			$filesystem_input_days_style = " display: none;";
+		} else {
+			$filesystem_input_days_style = "";
+		}
+		if (permission_exists('maintenance_edit')) {
+			echo "<input class='formfld' style='width: 20%; min-width: 40px;$filesystem_input_days_style' type='text' name='filesystem_retention_days[$x][days]' id='filesystem_days_$x' placeholder='days' maxlength='255' value='$filesystem_days'>";
+			echo "<input type='hidden' id='filesystem_uuid_$x' name='filesystem_retention_days[$x][uuid]' value='$filesystem_setting_uuid'>";
+			echo "<input type='hidden' id='filesystem_category_$x' name='filesystem_retention_days[$x][category]' value='$filesystem_category'>";
+			echo "<input type='hidden' id='filesystem_subcategory_$x' name='filesystem_retention_days[$x][subcategory]' value='$filesystem_subcategory'>";
+			echo "<input type='hidden' id='filesystem_type_$x' name='filesystem_retention_days[$x][type]' value='$filesystem_setting_table'>";
+		} else {
+			echo "$filesystem_days";
+		}
+		echo "	</td>";
+		echo "</tr>";
+		$c = !$c;
+	}
+	echo "			</table>";
+	echo "		</div>";
+
+	//form save submit
+	if (permission_exists('maintenance_edit')) {
+		echo "<input type='hidden' name='".$token['name']."' value='".$token['hash']."'>";
+	}
+	echo "	</form>";
+	echo "	<span class='hud_expander' onclick=\"$('#hud_maintenance_details').slideToggle('fast'); toggle_grid_row_end('Maintenance')\"><span class='fas fa-ellipsis-h'></span></span>";
 	echo "</div>";
 }
+
 ?>
