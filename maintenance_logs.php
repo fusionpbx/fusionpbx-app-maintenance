@@ -133,6 +133,7 @@ $sql .= " GROUP BY m.maintenance_log_epoch";
 $sql .= order_by($order_by, $order, 'maintenance_log_epoch', 'desc');
 $sql .= limit_offset($rows_per_page, $offset);
 
+
 if (count($parameters) > 0) {
 	$num_rows = $database->select($sql, $parameters, 'column');
 } else {
@@ -149,16 +150,16 @@ $offset = $rows_per_page * $page;
 
 //get the list
 $sql = "SELECT"
-. " m.maintenance_log_uuid"
-. ", m.domain_uuid"
-. ", d.domain_name"
-. ", m.maintenance_log_application"
-. ", to_timestamp(m.maintenance_log_epoch)::timestamptz AS maintenance_log_epoch"
-. ", m.maintenance_log_message"
-. ", m.maintenance_log_status"
-. " FROM"
-. "  v_maintenance_logs m"
-. " LEFT JOIN v_domains d ON d.domain_uuid = m.domain_uuid";
+	. " m.maintenance_log_uuid"
+	. ", m.domain_uuid"
+	. ", d.domain_name"
+	. ", m.maintenance_log_application"
+	. ", to_timestamp(m.maintenance_log_epoch)::timestamptz AS maintenance_log_epoch"
+	. ", m.maintenance_log_message"
+	. ", m.maintenance_log_status"
+	. " FROM"
+	. "  v_maintenance_logs m"
+	. " LEFT JOIN v_domains d ON d.domain_uuid = m.domain_uuid";
 if ($show == "all" && permission_exists('maintenance_log_all')) {
 	$sql .= " WHERE true";
 }
@@ -209,7 +210,7 @@ if (permission_exists('maintenance_log_delete') && $maintenance_logs) {
 echo "		<form id='form_search' class='inline' method='get'>\n";
 if (permission_exists('maintenance_log_all')) {
 	if ($show == 'all') {
-		echo "<input type='hidden' name='show' value='all'>\n";
+		echo "	<input type='hidden' name='show' value='all'>\n";
 	}
 	else {
 		echo button_show_all::create();
@@ -219,7 +220,7 @@ echo "			<input type='text' class='txt list-search' name='search' id='search' va
 echo button_search::create(empty($search));
 echo button_reset::create(empty($search));
 if (!empty($paging_controls_mini)) {
-	echo "<span style='margin-left: 15px;'>".$paging_controls_mini."</span>\n";
+	echo "		<span style='margin-left: 15px;'>".$paging_controls_mini."</span>\n";
 }
 echo "		</form>\n";
 echo "	</div>\n";
@@ -241,9 +242,9 @@ echo "	<table class='list'>\n";
 //header row
 echo "		<tr class='list-header'>\n";
 if (permission_exists('maintenance_log_delete')) {
-	echo "<th class='checkbox'>\n";
-		echo "<input type='checkbox' id='checkbox_all' name='checkbox_all' onclick='list_all_toggle();' ".($maintenance_logs ?: "style='visibility: hidden;'").">\n";
-	echo "</th>\n";
+	echo "		<th class='checkbox'>\n";
+	echo "			<input type='checkbox' id='checkbox_all' name='checkbox_all' onclick='list_all_toggle();' ".($maintenance_logs ?: "style='visibility: hidden;'").">\n";
+	echo "		</th>\n";
 }
 if ($show == 'all' && permission_exists('maintenance_log_all')) {
 	echo th_order_by('domain_name', $text['label-domain'], $order_by, $order);
@@ -254,7 +255,7 @@ echo th_order_by('status', $text['label-status'], $order_by, $order);
 echo th_order_by('message', $text['label-message'], $order_by, $order);
 //echo "<th class='left hide-md-dn'>".$text['label-message']."</th>\n";
 if (permission_exists('maintenance_log_edit') && $list_row_edit_button == 'true') {
-	echo "<td class='action-button'>&nbsp;</td>\n";
+	echo "		<td class='action-button'>&nbsp;</td>\n";
 }
 echo "		</tr>\n";
 
@@ -269,24 +270,24 @@ if (is_array($maintenance_logs) && @sizeof($maintenance_logs) != 0) {
 			$list_row_url = "maintenance_log_edit.php?id=".urlencode($row['maintenance_log_uuid']);
 		}
 		echo "<tr class='list-row' href='".$list_row_url."'>\n";
-			if (permission_exists('maintenance_log_delete')) {
-				echo "<td class='checkbox'>\n";
-				echo "	<input type='checkbox' name='maintenance_logs[$x][checked]' id='checkbox_".$x."' value='true' onclick=\"if (!this.checked) { document.getElementById('checkbox_all').checked = false; }\">\n";
-				echo "	<input type='hidden' name='maintenance_logs[$x][uuid]' value='".escape($row['maintenance_log_uuid'])."' />\n";
-				echo "</td>\n";
-			}
-			if ($show === 'all') {
-				echo "<td class='left'>$domain_name</td>\n";
-			}
-			echo "<td class='left'>".escape($application_name)."</td>\n";
-			echo "<td class='left'>".escape($row['maintenance_log_epoch'])."</td>\n";
-			echo "<td class='left'>".escape($row['maintenance_log_status'])."</td>\n";
-			echo "<td class='left hide-sm-dn'>".escape($row['maintenance_log_message'])."</td>\n";
-			if (permission_exists('maintenance_log_edit') && $list_row_edit_button == 'true') {
-				echo "<td class='action-button'>\n";
-				echo button::create(['type'=>'button','title'=>$text['button-edit'],'icon'=>$_SESSION['theme']['button_icon_edit'],'link'=>$list_row_url]);
-				echo "</td>\n";
-			}
+		if (permission_exists('maintenance_log_delete')) {
+			echo "<td class='checkbox'>\n";
+			echo "	<input type='checkbox' name='maintenance_logs[$x][checked]' id='checkbox_".$x."' value='true' onclick=\"if (!this.checked) { document.getElementById('checkbox_all').checked = false; }\">\n";
+			echo "	<input type='hidden' name='maintenance_logs[$x][uuid]' value='".escape($row['maintenance_log_uuid'])."' />\n";
+			echo "</td>\n";
+		}
+		if ($show === 'all') {
+			echo "<td class='left'>$domain_name</td>\n";
+		}
+		echo "	<td class='left'>".escape($application_name)."</td>\n";
+		echo "	<td class='left'>".escape($row['maintenance_log_epoch'])."</td>\n";
+		echo "	<td class='left'>".escape($row['maintenance_log_status'])."</td>\n";
+		echo "	<td class='left hide-sm-dn'>".escape($row['maintenance_log_message'])."</td>\n";
+		if (permission_exists('maintenance_log_edit') && $list_row_edit_button == 'true') {
+			echo "<td class='action-button'>\n";
+			echo button::create(['type'=>'button','title'=>$text['button-edit'],'icon'=>$_SESSION['theme']['button_icon_edit'],'link'=>$list_row_url]);
+			echo "</td>\n";
+		}
 		echo "</tr>\n";
 		$x++;
 	}
