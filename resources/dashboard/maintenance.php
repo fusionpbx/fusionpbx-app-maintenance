@@ -196,7 +196,7 @@ if (permission_exists('maintenance_view')) {
 		echo "				data: {\n";
 		echo "					labels: ['".$text['label-running'].": ".$total_running_maintenance_apps."', '".$text['label-total'].": ".$total_maintenance_apps."'],\n";
 		echo "					datasets: [{\n";
-		echo "						data: [".$total_running_maintenance_apps.", ".$total_maintenance_apps."],\n";
+		echo "						data: [".$total_running_maintenance_apps.", ".($total_maintenance_apps - $total_running_maintenance_apps)."],\n";
 		echo "						backgroundColor: [\n";
 		echo "							'".($settings->get('theme', 'dashboard_maintenance_chart_main_color') ?? "#2a9df4")."',\n";
 		echo "							'".($settings->get('theme', 'dashboard_maintenance_chart_sub_color') ?? "#d4d4d4")."'\n";
