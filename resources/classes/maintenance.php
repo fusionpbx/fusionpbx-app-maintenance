@@ -42,6 +42,11 @@ class maintenance {
 	const TOGGLE_FIELD = 'maintenance_enabled';
 	const TOGGLE_VALUES = ['true', 'false'];
 
+	const DATABASE_SUBCATEGORY = 'database_retention_days';
+	const FILESYSTEM_SUBCATEGORY = 'filesystem_retention_days';
+
+	private static $app_config_list = null;
+
 	/**
 	 * Returns an array of domain names with their domain UUID as the array key
 	 * @param database $database
@@ -65,13 +70,22 @@ class maintenance {
 		return $domains;
 	}
 
+	/**
+	 * Registers new applications by searching for files in the project that have the signature for a method called
+	 * <code>public static function database_maintenance</code> or the method <code>public static function
+	 * filesystem_maintenance</code>. When found, they are added to the <code>default_settings</code> category of
+	 * <b>maintenance</b> and put in to subcategory array <b>application</b> in default settings table.
+	 * This function is intended to be called by the upgrade method.
+	 * @param database $database
+	 */
 	public static function app_defaults(database $database) {
 		//get the maintenance apps
 		$database_maintenance_apps = self::find_classes_by_method('database_maintenance');
 		$filesystem_maintenance_apps = self::find_classes_by_method('filesystem_maintenance');
 		$maintenance_apps = $database_maintenance_apps + $filesystem_maintenance_apps;
-
-		self::register_applications($database, $maintenance_apps);
+		if (!empty($maintenance_apps)) {
+			self::register_applications($database, $maintenance_apps);
+		}
 	}
 
 	/**
@@ -102,10 +116,10 @@ class maintenance {
 			self::add_maintenance_app_to_array($registered_apps, $application, $text['description-default_settings_app'], $new_maintenance_apps, $index);
 
 			//get the application settings from the class for database maintenance
-			self::add_database_maintenance_to_array($database, $application, $text['description-retention_days'], $new_maintenance_apps, $index);
+			//self::add_database_maintenance_to_array($database, $application, $text['description-retention_days'], $new_maintenance_apps, $index);
 
 			//get the application settings from the class for filesystem maintenance
-			self::add_filesystem_maintenance_to_array($database, $application, $text['description-retention_days'], $new_maintenance_apps, $index);
+			//self::add_filesystem_maintenance_to_array($database, $application, $text['description-retention_days'], $new_maintenance_apps, $index);
 		}
 		if (count($new_maintenance_apps) > 0) {
 			$database->app_name = self::APP_NAME;
@@ -114,6 +128,66 @@ class maintenance {
 			return true;
 		}
 		return false;
+	}
+
+	/**
+	 * Returns the class specified category to be used for the maintenance service. If the class does not have a method that
+	 * returns a string with the category to use then the class name will be used as the category.
+	 * @param object|string $class_name
+	 * @return string
+	 */
+	public static function get_database_category($class_name): string {
+		if (method_exists($class_name, 'database_maintenance_category')) {
+			$default_value = $class_name::database_maintenance_category();
+		} else {
+			$default_value = $class_name;
+		}
+		return $default_value;
+	}
+
+	/**
+	 * Returns the class specified subcategory to be used for the maintenance service. If the class does not have a method that
+	 * returns a string with the subcategory to use then the class name will be used as the subcategory.
+	 * @param object|string $class_name
+	 * @return string
+	 */
+	public static function get_database_subcategory($class_name): string {
+		if (method_exists($class_name, 'database_maintenance_subcategory')) {
+			$default_value = $class_name::database_maintenance_subcategory();
+		} else {
+			$default_value = self::DATABASE_SUBCATEGORY;
+		}
+		return $default_value;
+	}
+
+	/**
+	 * Returns the class specified category to be used for the maintenance service. If the class does not have a method that
+	 * returns a string with the category to use then the class name will be used as the category.
+	 * @param object|string $class_name
+	 * @return string
+	 */
+	public static function get_filesystem_category($class_name): string {
+		if (method_exists($class_name, 'filesystem_maintenance_category')) {
+			$default_value = $class_name::filesystem_maintenance_category();
+		} else {
+			$default_value = $class_name;
+		}
+		return $default_value;
+	}
+
+	/**
+	 * Returns the class specified subcategory to be used for the maintenance service. If the class does not have a method that
+	 * returns a string with the subcategory to use then the class name will be used as the subcategory.
+	 * @param object|string $class_name
+	 * @return string
+	 */
+	public static function get_filesystem_subcategory($class_name): string {
+		if (method_exists($class_name, 'filesystem_maintenance_subcategory')) {
+			$default_value = $class_name::filesystem_maintenance_subcategory();
+		} else {
+			$default_value = self::FILESYSTEM_SUBCATEGORY;
+		}
+		return $default_value;
 	}
 
 	/**
@@ -137,6 +211,27 @@ class maintenance {
 			$registered_applications = [];
 		}
 		return $registered_applications;
+	}
+
+	/**
+	 * Get a value from the app_config.php file default settings
+	 * This function will load all app_config.php files and then load them in a class array only once. The first call will
+	 * have a performance impact but subsequent calls will have minimal impact as no files will be loaded.
+	 * @param string $category
+	 * @param string $subcategory
+	 * @return array|string|null If no value is found then null will be returned
+	 */
+	public static function get_app_config_value(string $category, string $subcategory) {
+		$return_value = null;
+		//check if this is the first time loading the files
+		if (self::$app_config_list === null) {
+			//load the app_config files once
+			self::load_app_config_list();
+		}
+		if (!empty(self::$app_config_list[$category][$subcategory])) {
+			$return_value = self::$app_config_list[$category][$subcategory];
+		}
+		return $return_value;
 	}
 
 	/**
@@ -164,7 +259,7 @@ class maintenance {
 
 	/**
 	 * Updates the array with a database maintenance app using a format the database object save method can use in default settings table
-	 * <p><b>default setting category</b>: class name that has the <code>use database_maintenance;</code> statement<br>
+	 * <p><b>default setting category</b>: class name that has the <code>implements database_maintenance;</code> statement<br>
 	 * <b>default setting subcategory</b>: "database_retention_days" (The class can override this setting to a custom value)<br>
 	 * <b>default setting value</b>: "30" (The class can override this setting to a custom value)<br>
 	 * <b>description</b>: "Number of days the maintenance application will keep the information."<br>
@@ -179,8 +274,8 @@ class maintenance {
 	private static function add_database_maintenance_to_array($database, $application, $description, &$array, &$index) {
 		//get the application settings from the object for database maintenance
 		if (method_exists($application, 'database_maintenance')) {
-			$category = 'maintenance';
-			$subcategory = $application . '_database_retention_days';
+			$category = $application;
+			$subcategory =  self::DATABASE_SUBCATEGORY;
 			//check if the default setting already exists in global default settings table
 			$uuid = self::default_setting_uuid($database, $category, $subcategory);
 			if (empty($uuid)) {
@@ -235,9 +330,9 @@ class maintenance {
 	private static function add_filesystem_maintenance_to_array($database, $application, $description, &$array, &$index) {
 		if (method_exists($application, 'filesystem_maintenance')) {
 			//the trait has this value defined
-			$category = 'maintenance';
+			$category = $application;
 			//the trait has this value defined
-			$subcategory = $application . '_filesystem_retention_days';
+			$subcategory = 'filesystem_retention_days';
 			//check if the default setting already exists in global settings
 			$uuid = self::default_setting_uuid($database, $category, $subcategory);
 			if (empty($uuid)) {
@@ -279,6 +374,173 @@ class maintenance {
 		}
 		return $found_classes;
 	}
+
+	private static function load_app_config_list() {
+
+		//app_config files use the array $apps to define the default_settings
+		global $apps;
+
+		//initialize the config list
+		self::$app_config_list = [];
+
+		//get the list of app_config files
+		$project_dir = dirname(__DIR__, 4);
+		$app_config_files = glob($project_dir . '/app/*/app_config.php');
+		$core_config_files = glob($project_dir . '/core/*/app_config.php');
+		$config_files = array_merge($app_config_files, $core_config_files);
+
+		//iterate over list
+		foreach ($config_files as $x => $file) {
+			//include the app_config file
+			include $file;
+			//create a classname
+			//get the array from the included file
+			if (!empty($apps[$x]['default_settings'])) {
+				foreach ($apps[$x]['default_settings'] as $setting) {
+					//get the subcategory
+					$category = $setting['default_setting_category'];
+					$subcategory = $setting['default_setting_subcategory'];
+					$value = $setting['default_setting_value'];
+					$type = $setting['default_setting_name'];
+					//check for array type
+					if ($type !== 'array') {
+						//store the values
+						self::$app_config_list[$category][$subcategory] = $value;
+					} else {
+						$order = intval($setting['default_setting_order']);
+						self::$app_config_list[$category][$subcategory][$order] = $value;
+					}
+				}
+			}
+		}
+	}
+
+	/**
+	 * Finds the UUID of a maintenance setting searching in the default settings, domain settings, and user settings tables.
+	 * This is primarily used for the dashboard display as there was a need to detect a setting even if it was disabled.
+	 * <p>NOTE:<br>
+	 * This will not deal with an array of returned values (such as maintenance_application) appropriately at this time as it has a limited scope of detecting a
+	 * string value that is unique with the category and subcategory combination across the tables.</p>
+	 * @param database $database Already connected database object
+	 * @param string $category Main category
+	 * @param string $subcategory Subcategory or name of the setting
+	 * @param bool $status Used for internal use but could be used to find a setting that is currently disabled
+	 * @return array Two-dimensional array assigned but using key/value pairs. The keys are:<br>
+	 *   <ul>uuid: Primary UUID that would be chosen by the settings object
+	 *   <ul>uuids: Array of all matching category and subcategory strings
+	 *   <ul>table: Table name that the primary UUID was found
+	 *   <ul>status: bool true/false
+	 * @access public
+	 */
+	public static function find_uuid(database $database, string $category, string $subcategory, bool $status = true): array {
+		//first look for false setting then override with enabled setting
+		if ($status) {
+			$uuids = self::find_uuid($database, $category, $subcategory, false);
+		} else {
+			//set defaults to not found
+			$uuids = [];
+			$uuids['uuid'] = '';
+			$uuids['uuids'] = [];
+			$uuids['table'] = '';
+			$uuids['status'] = false;
+		}
+		$status_string = ($status) ? 'true' : 'false';
+		//
+		// Get the settings for false first then override the 'false' setting with the setting that is set to 'true'
+		//
+		//get global setting
+		$result = self::get_uuid($database, 'default', $category, $subcategory, $status_string);
+		if (!empty($result)) {
+			$uuids['uuid'] = $result[0];
+			$uuids['count'] = count($result);
+			if (count($result) > 1) {
+				$uuids['uuids'] = $result;
+			} else {
+				$uuids['uuids'] = [];
+			}
+			$uuids['table'] = 'default';
+			$uuids['status'] = $status;
+		}
+		//override default with domain setting
+		$result = self::get_uuid($database, 'domain', $category, $subcategory, $status_string);
+		if (!empty($result)) {
+			if ($uuids['count'] > 0) {
+				$uuids['count'] += count($result);
+				if (count($uuids['uuids']) > 0) {
+					array_merge($uuids['uuids'], $result);
+				} else {
+					$ids[] = $uuids['uuid'];
+					$uuids['uuids'] = array_merge($result, $ids);
+				}
+			} else {
+				$uuids['count'] = count($result);
+				if (count($result) > 1) {
+					$uuids['uuids'] = $result;
+				} else {
+					$uuids['uuids'] = [];
+				}
+			}
+			$uuids['uuid'] = $result[0];
+			$uuids['table'] = 'domain';
+			$uuids['status'] = $status;
+		}
+		//override domain with user setting
+		$result = self::get_uuid($database, 'user', $category, $subcategory, $status_string);
+		if (!empty($result)) {
+			$uuids['uuid'] = $result[0];
+			$uuids['count'] = count($result);
+			if (count($result) > 1) {
+				$uuids['uuids'] = $result;
+			} else {
+				$uuids['uuids'] = [];
+			}
+			$uuids['table'] = 'user';
+			$uuids['status'] = $status;
+		}
+		return $uuids;
+	}
+
+	/**
+	 * Called by the find_uuid function to actually search database using prepared data structures
+	 * @access private
+	 */
+	private static function get_uuid(database $database, string $table, string $category, string $subcategory, string $status): array {
+		$uuid = [];
+		$sql = "select {$table}_setting_uuid from v_{$table}_settings s";
+		$sql .= " where s.{$table}_setting_category = :category";
+		$sql .= " and s.{$table}_setting_subcategory = :subcategory";
+		$sql .= " and s.{$table}_setting_enabled = '$status'";
+
+		//set search params
+		$params = [];
+		$params['category'] = $category;
+		$params['subcategory'] = $subcategory;
+		if ($table === 'domain' && !empty($_SESSION['domain_uuid']) && is_uuid($_SESSION['domain_uuid'])) {
+			$sql .= " and s.domain_uuid = :domain_uuid";
+			$params['domain_uuid'] = $_SESSION['domain_uuid'];
+		}
+		if ($table === 'user' && !empty($_SESSION['user_uuid']) && is_uuid($_SESSION['user_uuid'])) {
+			$sql .= " and s.user_uuid = :user_uuid";
+			$params['user_uuid'] = $_SESSION['user_uuid'];
+		}
+		$result = $database->select($sql, $params);
+		if (!empty($result)) {
+			if (is_array($result)) {
+				$uuids = array_map(function ($value) use ($table) {
+					if (is_array($value)) {
+						return $value["{$table}_setting_uuid"];
+					} else {
+						return $value;
+					}
+				}, $result);
+				$uuid = $uuids;
+			} else {
+				$uuid[] = $result;
+			}
+		}
+		return $uuid;
+	}
+
 }
 
 ?>

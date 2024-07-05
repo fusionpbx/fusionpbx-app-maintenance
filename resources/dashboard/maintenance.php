@@ -64,6 +64,11 @@
 			//check enabled/disabled status
 			$uuid = (empty($row['uuid']) ? uuid() : $row['uuid']);
 			$table = (empty($row['type']) ? 'default' : $row['type']);
+			//check table
+			if ($table !== 'domain' || $table !== 'default') {
+				header('HTTP/1.1 403 Forbidden', true, 403);
+				die();
+			}
 			$category = $row['category'];
 			$subcategory = $row['subcategory'];
 			$days = $row['days'];
@@ -101,6 +106,11 @@
 
 			$uuid = (empty($row['uuid']) ? uuid() : $row['uuid']);
 			$table = (empty($row['type']) ? 'default' : $row['type']);
+			//check table
+			if ($table !== 'domain' || $table !== 'default') {
+				header('HTTP/1.1 403 Forbidden', true, 403);
+				die();
+			}
 			$filesystem_category = $row['category'] ?? '';
 			$filesystem_subcategory = $row['subcategory'] ?? '';
 			$days = $row['days'] ?? '';
@@ -150,8 +160,8 @@
 			//check for database status
 			if (method_exists($maintenance_app, 'database_maintenance')) {
 				$total_maintenance_apps++;
-				$category = 'maintenance';
-				$subcategory = $maintenance_app . '_database_retention_days';
+				$category = maintenance::get_database_category($maintenance_app);
+				$subcategory = maintenance::get_database_subcategory($maintenance_app);
 				if (!empty($setting->get($category, $subcategory, ''))) {
 					$total_running_maintenance_apps++;
 				}
@@ -159,8 +169,8 @@
 			//check for filesystem status
 			if (method_exists($maintenance_app, 'filesystem_maintenance')) {
 				$total_maintenance_apps++;
-				$category = 'maintenance';
-				$subcategory = $maintenance_app . '_filesystem_retention_days';
+				$category = maintenance::get_filesystem_category($maintenance_app);
+				$subcategory = maintenance::get_filesystem_subcategory($maintenance_app);
 				if(!empty($setting->get($category, $subcategory, ''))) {
 					$total_running_maintenance_apps++;
 				}
@@ -267,14 +277,16 @@ if (permission_exists('maintenance_view')) {
 		$database_checkbox_state = CHECKBOX_HIDDEN;
 		$param = [];
 		if (class_exists($maintenance_app)) {
+			$display_name = $maintenance_app;
 			//check for database status
 			if (method_exists($maintenance_app, 'database_maintenance')) {
-				$database_category = 'maintenance';
-				$database_subcategory = $maintenance_app . '_database_retention_days';
-				$database_default_value = '30';
+				$database_category = maintenance::get_database_category($maintenance_app);
+				$database_subcategory = maintenance::get_database_subcategory($maintenance_app);
+				$database_default_value = maintenance::get_app_config_value($database_category, $database_subcategory); //app_config.php default value
 				$database_days = $setting->get($database_category, $database_subcategory, '');
+				$display_name = $database_category;
 				//uuid of setting
-				$database_setting_uuids = maintenance_service::find_uuid($database, $database_category, $database_subcategory);
+				$database_setting_uuids = maintenance::find_uuid($database, $database_category, $database_subcategory);
 				$database_setting_uuid = $database_setting_uuids['uuid'];
 				$database_setting_table = $database_setting_uuids['table'];
 				if (empty($database_days)) {
@@ -286,12 +298,15 @@ if (permission_exists('maintenance_view')) {
 
 			//check for filesystem status
 			if (method_exists($maintenance_app, 'filesystem_maintenance')) {
-				$filesystem_category = 'maintenance';
-				$filesystem_subcategory = $maintenance_app . '_filesystem_retention_days';
-				$filesystem_default_value = '30';
+				$filesystem_category = maintenance::get_filesystem_category($maintenance_app);
+				$filesystem_subcategory = maintenance::get_filesystem_subcategory($maintenance_app);
+				$filesystem_default_value = maintenance::get_app_config_value($filesystem_category, $filesystem_subcategory);
 				$filesystem_days = $setting->get($filesystem_category, $filesystem_subcategory, '');
+				if (empty($database_category)) {
+					$display_name = $filesystem_category;
+				}
 				//uuid of setting
-				$filesystem_setting_uuids = maintenance_service::find_uuid($database, $filesystem_category, $filesystem_subcategory);
+				$filesystem_setting_uuids = maintenance::find_uuid($database, $filesystem_category, $filesystem_subcategory);
 				$filesystem_setting_uuid = $filesystem_setting_uuids['uuid'];
 				$filesystem_setting_table = $filesystem_setting_uuids['table'];
 				if (empty($filesystem_days)) {
@@ -314,7 +329,7 @@ if (permission_exists('maintenance_view')) {
 		}
 		//display the maintanence application
 		echo "<tr>";
-		$display_name = ucwords(str_replace('_', ' ', $maintenance_app));
+		$display_name = ucwords(str_replace('_', ' ', $display_name));
 		echo "	<td valign='top' class='".$row_style[$c]." hud_text'>$display_name</td>";
 		//
 		// Database apps

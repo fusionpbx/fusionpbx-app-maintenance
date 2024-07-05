@@ -31,7 +31,7 @@
  *
  * @author Tim Fry <tim@fusionpbx.com>
  */
-class maintenance_logs {
+class maintenance_logs implements database_maintenance {
 
 	const APP_NAME = 'maintenance_logs';
 	const APP_UUID = '5be7b4c2-1a4f-4236-b91a-60e3c33904d7';
@@ -64,8 +64,8 @@ class maintenance_logs {
 		foreach ($domains as $domain_uuid => $domain_name) {
 			//get the settings for this domain
 			$domain_settings = new $settings(['database' => $database, 'domain_uuid' => $domain_uuid]);
-			//get retention days with automatic default settings fallback
-			$retention = $domain_settings->get('maintenance', self::class . '_database_retention_days', '');
+			//get retention days using the class defined category and subcategory
+			$retention = $domain_settings->get(self::database_maintenance_category(), self::database_maintenance_subcategory(), '');
 			//ensure there is something to do
 			if (!empty($retention) && is_numeric($retention)) {
 				//delete old entries for this domain
@@ -266,6 +266,14 @@ class maintenance_logs {
 			//set message
 			message::add($text['message-copy']);
 		}
+	}
+
+	public static function database_maintenance_category(): string {
+		return "maintenance_logs";
+	}
+
+	public static function database_maintenance_subcategory(): string {
+		return "database_retention_days";
 	}
 }
 

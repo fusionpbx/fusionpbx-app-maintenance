@@ -113,8 +113,10 @@ $maintenance_apps = [];
 if (permission_exists('maintenance_show_all') && $show_all) {
 	//get the global settings
 	$sql = "select default_setting_subcategory, default_setting_value, default_setting_enabled from v_default_settings";
-	$sql .= " where default_setting_category = 'maintenance'";
-	$sql .= " and (default_setting_subcategory like '%_database_retention_days' or default_setting_subcategory like '%_filesystem_retention_days')";
+	$sql .= " where";
+	$sql .= "   default_setting_subcategory = '" . maintenance::DATABASE_SUBCATEGORY . "'";
+	$sql .= " or";
+	$sql .= "   default_setting_subcategory = '" . maintenance::FILESYSTEM_SUBCATEGORY . "'";
 	$parameters = null;
 
 	//filter based on search
@@ -131,20 +133,22 @@ if (permission_exists('maintenance_show_all') && $show_all) {
 
 	if (!empty($result)) {
 		foreach ($result as $row) {
-			if (str_ends_with($row['default_setting_subcategory'], '_database_retention_days')) {
-				$class_name = substr($row['default_setting_subcategory'], 0, -1 * strlen('_database_rentention_days') + 1);
+			if ($row['default_setting_subcategory'] === maintenance::DATABASE_SUBCATEGORY) {
+				$class_name = $row['default_setting_category'];
 				$maintenance_apps[$class_name]['database_maintenance']['global'] = $row;
 			}
-			if (str_ends_with($row['default_setting_subcategory'], '_filesystem_retention_days')) {
-				$class_name = substr($row['default_setting_subcategory'], 0, -1 * strlen('_filesystem_rentention_days') + 1);
+			if ($row['default_setting_subcategory'] === maintenance::FILESYSTEM_SUBCATEGORY) {
+				$class_name = $row['default_setting_category'];
 				$maintenance_apps[$class_name]['filesystem_maintenance']['global'] = $row;
 			}
 		}
 	}
 	//get the domain settings
 	$sql = "select domain_uuid, domain_setting_subcategory, domain_setting_value, domain_setting_enabled from v_domain_settings";
-	$sql .= " where domain_setting_category = 'maintenance'";
-	$sql .= " and (domain_setting_subcategory like '%_database_retention_days' or domain_setting_subcategory like '%_filesystem_retention_days')";
+	$sql .= " where (";
+	$sql .= "   domain_setting_subcategory = '" . maintenance::DATABASE_SUBCATEGORY . "'";
+	$sql .= " or";
+	$sql .= "   domain_setting_subcategory = '" . maintenance::FILESYSTEM_SUBCATEGORY . "')";
 
 	//filter based on search
 	if (!empty($search)) {
@@ -160,12 +164,12 @@ if (permission_exists('maintenance_show_all') && $show_all) {
 
 	if (!empty($result)) {
 		foreach ($result as $row) {
-			if (str_ends_with($row['domain_setting_subcategory'], '_database_retention_days')) {
-				$class_name = substr($row['domain_setting_subcategory'], 0, -1 * strlen('_database_rentention_days') + 1);
+			if ($row['domain_setting_subcategory'] === maintenance::DATABASE_SUBCATEGORY) {
+				$class_name = $row['domain_setting_category'];
 				$maintenance_apps[$class_name]['database_maintenance'][$row['domain_uuid']] = $row;
 			}
-			if (str_ends_with($row['domain_setting_subcategory'], '_filesystem_retention_days')) {
-				$class_name = substr($row['domain_setting_subcategory'], 0, -1 * strlen('_filesystem_rentention_days') + 1);
+			if ($row['domain_setting_subcategory'] === maintenance::FILESYSTEM_SUBCATEGORY) {
+				$class_name = $row['domain_setting_category'];
 				$maintenance_apps[$class_name]['filesystem_maintenance'][$row['domain_uuid']] = $row;
 			}
 		}
@@ -174,8 +178,7 @@ if (permission_exists('maintenance_show_all') && $show_all) {
 	$domain_uuid = $_SESSION['domain_uuid'];
 	//show only the current domain settings
 	$sql = "select domain_uuid, domain_setting_subcategory, domain_setting_value, domain_setting_enabled from v_domain_settings";
-	$sql .= " where domain_setting_category = 'maintenance'";
-	$sql .= " and (domain_setting_subcategory like '%_database_retention_days' or domain_setting_subcategory like '%_filesystem_retention_days')";
+	$sql .= " where (domain_setting_subcategory = ' " . maintenance::DATABASE_SUBCATEGORY . "' or domain_setting_subcategory = '" . maintenance::FILESYSTEM_SUBCATEGORY . "')";
 	$sql .= " and domain_uuid = '$domain_uuid'";
 	if (!empty($search)) {
 		$search_param = "%$search%";
@@ -190,12 +193,12 @@ if (permission_exists('maintenance_show_all') && $show_all) {
 
 	if (!empty($result)) {
 		foreach ($result as $row) {
-			if (str_ends_with($row['domain_setting_subcategory'], '_database_retention_days')) {
-				$class_name = substr($row['domain_setting_subcategory'], 0, -1 * strlen('_database_rentention_days') + 1);
+			if ($row['domain_setting_subcategory'] === maintenance::DATABASE_SUBCATEGORY) {
+				$class_name = $row['domain_setting_category'];
 				$maintenance_apps[$class_name]['database_maintenance'][$row['domain_uuid']] = $row;
 			}
-			if (str_ends_with($row['domain_setting_subcategory'], '_filesystem_retention_days')) {
-				$class_name = substr($row['domain_setting_subcategory'], 0, -1 * strlen('_filesystem_rentention_days') + 1);
+			if ($row['domain_setting_subcategory'] === maintenance::FILESYSTEM_SUBCATEGORY) {
+				$class_name = $row['domain_setting_category'];
 				$maintenance_apps[$class_name]['filesystem_maintenance'][$row['domain_uuid']] = $row;
 			}
 		}
