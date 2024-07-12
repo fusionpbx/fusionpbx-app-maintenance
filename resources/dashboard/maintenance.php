@@ -380,27 +380,27 @@ if (permission_exists('maintenance_view')) {
 		//
 		//filesystem apps
 		//
-		echo "	<td valign='top' class='".$row_style[$c]." hud_text input tr_link_void' style='width: 1%; text-align: center;'>";
 		if ($filesystem_checkbox_state !== CHECKBOX_HIDDEN) {
-		if (substr($setting->get('theme','input_toggle_style', ''), 0, 6) == 'switch') {
-			echo "<label class='switch'>";
-			echo "<input type='checkbox' locked id='filesystem_enabled_$x' name='filesystem_retention_days[$x][status]' value='true' $filesystem_checked onclick=\"this.checked ? show_input_box('filesystem_days_$x') : hide_input_box('filesystem_days_$x');\">";
-			echo "<span class='slider'></span>";
-			echo "</label>";
-		}
-		else {
-			echo "<td valign='top' class='".$row_style[$c]." hud_text'>";
-			if ($show_filesystem_days) {
-				echo $filesystem_enabled;
-			} else {
-				echo "&nbsp;";
+			if (substr($setting->get('theme','input_toggle_style', ''), 0, 6) == 'switch') {
+				echo "<td valign='top' class='".$row_style[$c]." hud_text input tr_link_void' style='width: 1%; text-align: center;'>";
+				echo "	<label class='switch'>";
+				echo "		<input type='checkbox' locked id='filesystem_enabled_$x' name='filesystem_retention_days[$x][status]' value='true' $filesystem_checked onclick=\"this.checked ? show_input_box('filesystem_days_$x') : hide_input_box('filesystem_days_$x');\">";
+				echo "		<span class='slider'></span>";
+				echo "	</label>";
+				echo "</td>";
 			}
-			echo "</td>";
-		}
+			else {
+				echo "<td valign='top' class='".$row_style[$c]." hud_text'>";
+				if ($show_filesystem_days) {
+					echo $filesystem_enabled;
+				} else {
+					echo "&nbsp;";
+				}
+				echo "</td>";
+			}
 		} else {
-			echo "&nbsp;";
+			echo "<td valign='top' class='".$row_style[$c]." hud_text'>&nbsp;</td>";
 		}
-		echo "	</td>";
 		//filesystem days input box
 		echo "	<td valign='top' class='".$row_style[$c]." hud_text input tr_link_void'>";
 		//hide the input box if we are hiding the checkbox
