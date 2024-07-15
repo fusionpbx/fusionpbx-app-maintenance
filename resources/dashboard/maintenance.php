@@ -65,7 +65,7 @@
 			$uuid = (empty($row['uuid']) ? uuid() : $row['uuid']);
 			$table = (empty($row['type']) ? 'default' : $row['type']);
 			//check table
-			if ($table !== 'domain' || $table !== 'default') {
+			if ($table !== 'domain' && $table !== 'default') {
 				header('HTTP/1.1 403 Forbidden', true, 403);
 				die();
 			}
@@ -107,7 +107,7 @@
 			$uuid = (empty($row['uuid']) ? uuid() : $row['uuid']);
 			$table = (empty($row['type']) ? 'default' : $row['type']);
 			//check table
-			if ($table !== 'domain' || $table !== 'default') {
+			if ($table !== 'domain' && $table !== 'default') {
 				header('HTTP/1.1 403 Forbidden', true, 403);
 				die();
 			}
