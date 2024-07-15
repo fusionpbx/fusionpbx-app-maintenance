@@ -410,7 +410,7 @@ if (permission_exists('maintenance_view')) {
 			$filesystem_input_days_style = "";
 		}
 		if (permission_exists('maintenance_edit')) {
-			echo "<input class='formfld' style='width: 20%; min-width: 40px;$filesystem_input_days_style' type='text' name='filesystem_retention_days[$x][days]' id='filesystem_days_$x' placeholder='days' maxlength='255' value='$filesystem_days'>";
+			echo "<input class='formfld' style='width: 20%; min-width: 40px;$filesystem_input_days_style' type='text' name='filesystem_retention_days[$x][days]' id='filesystem_days_$x' placeholder='days' maxlength='255' value='" . ($filesystem_checkbox_state === CHECKBOX_CHECKED ? $filesystem_days : $filesystem_default_value) . "'>";
 			echo "<input type='hidden' id='filesystem_uuid_$x' name='filesystem_retention_days[$x][uuid]' value='$filesystem_setting_uuid'>";
 			echo "<input type='hidden' id='filesystem_category_$x' name='filesystem_retention_days[$x][category]' value='$filesystem_category'>";
 			echo "<input type='hidden' id='filesystem_subcategory_$x' name='filesystem_retention_days[$x][subcategory]' value='$filesystem_subcategory'>";
