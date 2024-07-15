@@ -203,9 +203,11 @@ echo "	<div class='heading'>";
 echo "		<b>".$text['title-maintenance_logs']." (".$num_rows.")</b>";
 echo "	</div>\n";
 echo "	<div class='actions'>\n";
-echo button_back::create('maintenance.php');
+//button back
+echo button::create(['type'=>'button','label'=>$text['button-back'],'icon'=>$_SESSION['theme']['button_icon_back'],'id'=>'btn_back','style'=>'margin-right: 15px;','link'=>'maintenance.php']);
 if (permission_exists('maintenance_log_delete') && $maintenance_logs) {
-	echo button_delete::create();
+	//button delete
+	echo button::create(['type'=>'button','label'=>$text['button-delete'],'icon'=>$_SESSION['theme']['button_icon_delete'],'id'=>'btn_delete','name'=>'btn_delete','style'=>'display: none; margin-right: 15px;','onclick'=>"modal_open('modal-delete','btn_delete');"]);
 }
 echo "		<form id='form_search' class='inline' method='get'>\n";
 if (permission_exists('maintenance_log_all')) {
@@ -213,12 +215,15 @@ if (permission_exists('maintenance_log_all')) {
 		echo "	<input type='hidden' name='show' value='all'>\n";
 	}
 	else {
-		echo button_show_all::create();
+		//button show_all
+		echo button::create(['type'=>'button','alt'=>$text['button-show_all']??'Show All','label'=>$text['button-show_all']??'Show All','class'=>'btn btn-default','icon'=>$_SESSION['theme']['button_icon_all']??'globe','link'=>(empty($url_params) ? '?show=all' : $url_params . '&show=all')]);
 	}
 }
 echo "			<input type='text' class='txt list-search' name='search' id='search' value=\"".escape($search)."\" placeholder=\"".$text['label-search']."\" onkeydown='list_search_reset();'>";
-echo button_search::create(empty($search));
-echo button_reset::create(empty($search));
+//button search
+echo button::create(['label'=>$text['button-search'],'icon'=>$_SESSION['theme']['button_icon_search'],'type'=>'submit','id'=>'btn_search']);
+//button reset
+//echo button_reset::create(empty($search));
 if (!empty($paging_controls_mini)) {
 	echo "		<span style='margin-left: 15px;'>".$paging_controls_mini."</span>\n";
 }
