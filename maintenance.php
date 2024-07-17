@@ -80,7 +80,7 @@ if (!empty($_REQUEST['action'])) {
 }
 
 if (!empty($_REQUEST['show'])) {
-	$show_all = ($_REQUEST['show'] == 'all') ? true : false;
+	$show_all = ($_REQUEST['show'] == 'all' && permission_exists('maintenance_show_all')) ? true : false;
 } else {
 	$show_all = false;
 }
@@ -110,97 +110,98 @@ $classes = $default_settings->get('maintenance', 'application', []);
 //get the display array
 $maintenance_apps = [];
 
-if (permission_exists('maintenance_show_all') && $show_all) {
-	//get the global settings
-	$sql = "select default_setting_subcategory, default_setting_value, default_setting_enabled from v_default_settings";
-	$sql .= " where";
-	$sql .= "   default_setting_subcategory = '" . maintenance::DATABASE_SUBCATEGORY . "'";
-	$sql .= " or";
-	$sql .= "   default_setting_subcategory = '" . maintenance::FILESYSTEM_SUBCATEGORY . "'";
-	$parameters = null;
-
-	//filter based on search
-	if (!empty($search)) {
-		$search_param = "%$search%";
-		$sql .= " and default_setting_subcategory like :search";
-		$parameters['search'] = $search_param;
+if ($show_all) {
+//	//get the global settings
+//	$sql = "select default_setting_subcategory, default_setting_value, default_setting_enabled from v_default_settings";
+//	$sql .= " where";
+//	$sql .= "   default_setting_subcategory = '" . maintenance::DATABASE_SUBCATEGORY . "'";
+//	$sql .= " or";
+//	$sql .= "   default_setting_subcategory = '" . maintenance::FILESYSTEM_SUBCATEGORY . "'";
+//	$parameters = null;
+//
+//	//filter based on search
+//	if (!empty($search)) {
+//		$search_param = "%$search%";
+//		$sql .= " and default_setting_subcategory like :search";
+//		$parameters['search'] = $search_param;
+//	}
+//	if (!empty($page)) {
+//		$sql .= limit_offset($rows_per_page, $offset);
+//	}
+//
+//	$result = $database->execute($sql, $parameters, 'all');
+//
+//	if (!empty($result)) {
+//		foreach ($result as $row) {
+//			if ($row['default_setting_subcategory'] === maintenance::DATABASE_SUBCATEGORY) {
+//				$class_name = $row['default_setting_category'];
+//				$maintenance_apps[$class_name]['database_maintenance']['global'] = $row;
+//			}
+//			if ($row['default_setting_subcategory'] === maintenance::FILESYSTEM_SUBCATEGORY) {
+//				$class_name = $row['default_setting_category'];
+//				$maintenance_apps[$class_name]['filesystem_maintenance']['global'] = $row;
+//			}
+//		}
+//	}
+//	//get the domain settings
+//	$sql = "select domain_uuid, domain_setting_subcategory, domain_setting_value, domain_setting_enabled from v_domain_settings";
+//	$sql .= " where (";
+//	$sql .= "   domain_setting_subcategory = '" . maintenance::DATABASE_SUBCATEGORY . "'";
+//	$sql .= " or";
+//	$sql .= "   domain_setting_subcategory = '" . maintenance::FILESYSTEM_SUBCATEGORY . "')";
+//
+//	//filter based on search
+//	if (!empty($search)) {
+//		$search_param = "%$search%";
+//		$sql .= " and domain_setting_subcategory like :search";
+//		$parameters['search'] = $search_param;
+//	}
+//	if (!empty($page)) {
+//		$sql .= limit_offset($rows_per_page, $offset);
+//	}
+//
+//	$result = $database->execute($sql, $parameters, 'all');
+//
+//	if (!empty($result)) {
+//		foreach ($result as $row) {
+//			if ($row['domain_setting_subcategory'] === maintenance::DATABASE_SUBCATEGORY) {
+//				$class_name = $row['domain_setting_category'];
+//				$maintenance_apps[$class_name]['database_maintenance'][$row['domain_uuid']] = $row;
+//			}
+//			if ($row['domain_setting_subcategory'] === maintenance::FILESYSTEM_SUBCATEGORY) {
+//				$class_name = $row['domain_setting_category'];
+//				$maintenance_apps[$class_name]['filesystem_maintenance'][$row['domain_uuid']] = $row;
+//			}
+//		}
+//	}
+	//get maintainers
+	$global_settings = new settings(['database' => $database]);
+	$maintainers = $global_settings->get('maintainers', 'application', []);
+	$domains = maintenance::get_domains($database);
+	foreach ($domains as $domain_uuid => $domain) {
+		
 	}
-	if (!empty($page)) {
-		$sql .= limit_offset($rows_per_page, $offset);
-	}
-
-	$result = $database->execute($sql, $parameters, 'all');
-
-	if (!empty($result)) {
-		foreach ($result as $row) {
-			if ($row['default_setting_subcategory'] === maintenance::DATABASE_SUBCATEGORY) {
-				$class_name = $row['default_setting_category'];
-				$maintenance_apps[$class_name]['database_maintenance']['global'] = $row;
-			}
-			if ($row['default_setting_subcategory'] === maintenance::FILESYSTEM_SUBCATEGORY) {
-				$class_name = $row['default_setting_category'];
-				$maintenance_apps[$class_name]['filesystem_maintenance']['global'] = $row;
-			}
+}
+else {
+	//use the settings object to get the maintenance apps and their values
+	$domain_settings = new settings(['database'=>$database, 'domain_uuid' => $_SESSION['domain_uuid'] ?? '']);
+	$maintainers = $domain_settings->get('maintenance', 'application', []);
+	foreach ($maintainers as $maintainer) {
+		//database retention days
+		$category = maintenance::get_database_category($maintainer);
+		$subcategory = maintenance::get_database_subcategory($maintainer);
+		$database_retention_days = $domain_settings->get($category, $subcategory, '');
+		if (!empty($database_retention_days)) {
+			$maintenance_apps[$category]['database_maintenance'][$domain_uuid]['domain_setting_value'] = $database_retention_days;
+			$maintenance_apps[$category]['database_maintenance'][$domain_uuid]['domain_setting_enabled'] = 'true';
 		}
-	}
-	//get the domain settings
-	$sql = "select domain_uuid, domain_setting_subcategory, domain_setting_value, domain_setting_enabled from v_domain_settings";
-	$sql .= " where (";
-	$sql .= "   domain_setting_subcategory = '" . maintenance::DATABASE_SUBCATEGORY . "'";
-	$sql .= " or";
-	$sql .= "   domain_setting_subcategory = '" . maintenance::FILESYSTEM_SUBCATEGORY . "')";
-
-	//filter based on search
-	if (!empty($search)) {
-		$search_param = "%$search%";
-		$sql .= " and domain_setting_subcategory like :search";
-		$parameters['search'] = $search_param;
-	}
-	if (!empty($page)) {
-		$sql .= limit_offset($rows_per_page, $offset);
-	}
-
-	$result = $database->execute($sql, $parameters, 'all');
-
-	if (!empty($result)) {
-		foreach ($result as $row) {
-			if ($row['domain_setting_subcategory'] === maintenance::DATABASE_SUBCATEGORY) {
-				$class_name = $row['domain_setting_category'];
-				$maintenance_apps[$class_name]['database_maintenance'][$row['domain_uuid']] = $row;
-			}
-			if ($row['domain_setting_subcategory'] === maintenance::FILESYSTEM_SUBCATEGORY) {
-				$class_name = $row['domain_setting_category'];
-				$maintenance_apps[$class_name]['filesystem_maintenance'][$row['domain_uuid']] = $row;
-			}
-		}
-	}
-} else {
-	$domain_uuid = $_SESSION['domain_uuid'];
-	//show only the current domain settings
-	$sql = "select domain_uuid, domain_setting_subcategory, domain_setting_value, domain_setting_enabled from v_domain_settings";
-	$sql .= " where (domain_setting_subcategory = ' " . maintenance::DATABASE_SUBCATEGORY . "' or domain_setting_subcategory = '" . maintenance::FILESYSTEM_SUBCATEGORY . "')";
-	$sql .= " and domain_uuid = '$domain_uuid'";
-	if (!empty($search)) {
-		$search_param = "%$search%";
-		$sql .= " and domain_setting_subcategory like :search";
-		$parameters['search'] = $search_param;
-	}
-	if (!empty($page)) {
-		$sql .= limit_offset($rows_per_page, $offset);
-	}
-
-	$result = $database->execute($sql, $parameters ?? null, 'all');
-
-	if (!empty($result)) {
-		foreach ($result as $row) {
-			if ($row['domain_setting_subcategory'] === maintenance::DATABASE_SUBCATEGORY) {
-				$class_name = $row['domain_setting_category'];
-				$maintenance_apps[$class_name]['database_maintenance'][$row['domain_uuid']] = $row;
-			}
-			if ($row['domain_setting_subcategory'] === maintenance::FILESYSTEM_SUBCATEGORY) {
-				$class_name = $row['domain_setting_category'];
-				$maintenance_apps[$class_name]['filesystem_maintenance'][$row['domain_uuid']] = $row;
-			}
+		//filesystem retention days
+		$category = maintenance::get_filesystem_category($maintainer);
+		$subcategory = maintenance::get_filesystem_subcategory($maintainer);
+		$filesystem_retention_days = $domain_settings->get($category, $subcategory, '');
+		if (!empty($filesystem_retention_days)) {
+			$maintenance_apps[$category]['filesystem_maintenance'][$domain_uuid]['domain_setting_value'] = $filesystem_retention_days;
+			$maintenance_apps[$category]['filesystem_maintenance'][$domain_uuid]['domain_setting_enabled'] = 'true';
 		}
 	}
 
@@ -265,7 +266,7 @@ echo "		<input type='hidden' name='search' value=\"".escape($search)."\">";
 echo "		<table class='list'>";
 echo "			<tr class='list-header'>";
 echo "				<th>Name</th>";
-if (permission_exists('maintenance_show_all')) {
+if ($show_all) {
 	echo "			<th>Domain</th>";
 }
 echo "				<th>Database Enabled</th>";
@@ -280,7 +281,7 @@ foreach ($maintenance_apps as $class => $app_settings) {
 	$display_name = ucwords(str_replace('_', ' ', $class));
 
 	//display global first
-	if ((isset($app_settings['database_maintenance']['global']) || isset($app_settings['filesystem_maintenance']['global'])) && permission_exists('maintenance_show_all')) {
+	if ((isset($app_settings['database_maintenance']['global']) || isset($app_settings['filesystem_maintenance']['global'])) && $show_all) {
 		echo "<tr class='list-row' style=''>";
 		echo "	<td>$display_name</td>";
 		echo "	<td>".$text['label-global']."</td>";
@@ -322,7 +323,7 @@ foreach ($maintenance_apps as $class => $app_settings) {
 			}
 			echo "<tr class='list-row' style=''>";
 			echo "	<td>$display_name</td>";
-			if (permission_exists('maintenance_show_all')) {
+			if ($show_all) {
 				echo "<td>".$domain_names[$domain_uuid]."</td>";
 			}
 			if (isset($app_settings['database_maintenance'][$domain_uuid])) {
