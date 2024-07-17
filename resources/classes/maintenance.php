@@ -160,6 +160,10 @@ class maintenance {
 		return $default_value;
 	}
 
+	public static function get_database_retention_days(settings $settings, $class_name): string {
+		return $settings->get(self::get_database_category($class_name), self::get_database_subcategory($class_name), '');
+	}
+
 	/**
 	 * Returns the class specified category to be used for the maintenance service. If the class does not have a method that
 	 * returns a string with the category to use then the class name will be used as the category.
@@ -188,6 +192,10 @@ class maintenance {
 			$default_value = self::FILESYSTEM_SUBCATEGORY;
 		}
 		return $default_value;
+	}
+
+	public static function get_filesystem_retention_days(settings $settings, $class_name): string {
+		return $settings->get(self::get_filesystem_category($class_name), self::get_filesystem_subcategory($class_name), '');
 	}
 
 	/**
@@ -392,7 +400,7 @@ class maintenance {
 		//iterate over list
 		foreach ($config_files as $x => $file) {
 			//include the app_config file
-			include $file;
+			include_once $file;
 			//create a classname
 			//get the array from the included file
 			if (!empty($apps[$x]['default_settings'])) {
@@ -426,10 +434,12 @@ class maintenance {
 	 * @param string $subcategory Subcategory or name of the setting
 	 * @param bool $status Used for internal use but could be used to find a setting that is currently disabled
 	 * @return array Two-dimensional array assigned but using key/value pairs. The keys are:<br>
-	 *   <ul>uuid: Primary UUID that would be chosen by the settings object
-	 *   <ul>uuids: Array of all matching category and subcategory strings
-	 *   <ul>table: Table name that the primary UUID was found
-	 *   <ul>status: bool true/false
+	 * <ul>
+	 *   <li>uuid: Primary UUID that would be chosen by the settings object
+	 *   <li>uuids: Array of all matching category and subcategory strings
+	 *   <li>table: Table name that the primary UUID was found
+	 *   <li>status: bool true/false
+	 * </ul>
 	 * @access public
 	 */
 	public static function find_uuid(database $database, string $category, string $subcategory, bool $status = true): array {
