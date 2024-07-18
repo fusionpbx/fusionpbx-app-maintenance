@@ -459,7 +459,7 @@ class maintenance {
 		// Get the settings for false first then override the 'false' setting with the setting that is set to 'true'
 		//
 		//get global setting
-		$result = self::get_uuid($database, 'default', $category, $subcategory, $status_string);
+		$result = self::get_uuids($database, 'default', $category, $subcategory, $status_string);
 		if (!empty($result)) {
 			$uuids['uuid'] = $result[0];
 			$uuids['count'] = count($result);
@@ -472,7 +472,7 @@ class maintenance {
 			$uuids['status'] = $status;
 		}
 		//override default with domain setting
-		$result = self::get_uuid($database, 'domain', $category, $subcategory, $status_string);
+		$result = self::get_uuids($database, 'domain', $category, $subcategory, $status_string);
 		if (!empty($result)) {
 			if ($uuids['count'] > 0) {
 				$uuids['count'] += count($result);
@@ -495,7 +495,7 @@ class maintenance {
 			$uuids['status'] = $status;
 		}
 		//override domain with user setting
-		$result = self::get_uuid($database, 'user', $category, $subcategory, $status_string);
+		$result = self::get_uuids($database, 'user', $category, $subcategory, $status_string);
 		if (!empty($result)) {
 			$uuids['uuid'] = $result[0];
 			$uuids['count'] = count($result);
@@ -512,9 +512,14 @@ class maintenance {
 
 	/**
 	 * Called by the find_uuid function to actually search database using prepared data structures
-	 * @access private
+	 * @param database $database Database object
+	 * @param string $table Either 'default' or 'domain'
+	 * @param string $category Category value to match
+	 * @param string $subcategory Subcategory value to match
+	 * @param string $status Either 'true' or 'false'
+	 * @return array
 	 */
-	private static function get_uuid(database $database, string $table, string $category, string $subcategory, string $status): array {
+	public static function get_uuids(database $database, string $table, string $category, string $subcategory, string $status): array {
 		$uuid = [];
 		$sql = "select {$table}_setting_uuid from v_{$table}_settings s";
 		$sql .= " where s.{$table}_setting_category = :category";
@@ -549,6 +554,35 @@ class maintenance {
 			}
 		}
 		return $uuid;
+	}
+
+	/**
+	 * Returns the record set of the UUID in the table or an empty array
+	 * @param database $database
+	 * @param string $table Either 'domain' or 'default'
+	 * @param string $uuid
+	 * @return array
+	 */
+	public static function get_value_by_uuid(database $database, string $table, string $uuid): array {
+		if ($table === 'domain' || $table === 'default') {
+			$sql = "select * from v_{$table}_settings"
+			. " where {$table}_setting_uuid = :uuid";
+			$parameters = [];
+			$parameters['uuid'] = $uuid;
+			$result = $database->select($sql, $parameters, 'row');
+			if (!empty($result)) {
+				return $result;
+			}
+		}
+		return [];
+	}
+
+	public static function has_database_maintenance($object_or_class): bool {
+		return method_exists($object_or_class, 'database_maintenance');
+	}
+
+	public static function has_filesystem_maintenance($object_or_class): bool {
+		return method_exists($object_or_class, 'filesystem_maintenance');
 	}
 
 }
