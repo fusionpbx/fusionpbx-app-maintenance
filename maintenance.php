@@ -79,6 +79,7 @@ if (!empty($_REQUEST['action'])) {
 	unset($token);
 }
 
+//create a boolean value to represent if show_all is enabled
 if (!empty($_REQUEST['show'])) {
 	$show_all = ($_REQUEST['show'] == 'all' && permission_exists('maintenance_show_all')) ? true : false;
 } else {
@@ -111,82 +112,69 @@ $classes = $default_settings->get('maintenance', 'application', []);
 $maintenance_apps = [];
 
 if ($show_all) {
-//	//get the global settings
-//	$sql = "select default_setting_subcategory, default_setting_value, default_setting_enabled from v_default_settings";
-//	$sql .= " where";
-//	$sql .= "   default_setting_subcategory = '" . maintenance::DATABASE_SUBCATEGORY . "'";
-//	$sql .= " or";
-//	$sql .= "   default_setting_subcategory = '" . maintenance::FILESYSTEM_SUBCATEGORY . "'";
-//	$parameters = null;
-//
-//	//filter based on search
-//	if (!empty($search)) {
-//		$search_param = "%$search%";
-//		$sql .= " and default_setting_subcategory like :search";
-//		$parameters['search'] = $search_param;
-//	}
-//	if (!empty($page)) {
-//		$sql .= limit_offset($rows_per_page, $offset);
-//	}
-//
-//	$result = $database->execute($sql, $parameters, 'all');
-//
-//	if (!empty($result)) {
-//		foreach ($result as $row) {
-//			if ($row['default_setting_subcategory'] === maintenance::DATABASE_SUBCATEGORY) {
-//				$class_name = $row['default_setting_category'];
-//				$maintenance_apps[$class_name]['database_maintenance']['global'] = $row;
-//			}
-//			if ($row['default_setting_subcategory'] === maintenance::FILESYSTEM_SUBCATEGORY) {
-//				$class_name = $row['default_setting_category'];
-//				$maintenance_apps[$class_name]['filesystem_maintenance']['global'] = $row;
-//			}
-//		}
-//	}
-//	//get the domain settings
-//	$sql = "select domain_uuid, domain_setting_subcategory, domain_setting_value, domain_setting_enabled from v_domain_settings";
-//	$sql .= " where (";
-//	$sql .= "   domain_setting_subcategory = '" . maintenance::DATABASE_SUBCATEGORY . "'";
-//	$sql .= " or";
-//	$sql .= "   domain_setting_subcategory = '" . maintenance::FILESYSTEM_SUBCATEGORY . "')";
-//
-//	//filter based on search
-//	if (!empty($search)) {
-//		$search_param = "%$search%";
-//		$sql .= " and domain_setting_subcategory like :search";
-//		$parameters['search'] = $search_param;
-//	}
-//	if (!empty($page)) {
-//		$sql .= limit_offset($rows_per_page, $offset);
-//	}
-//
-//	$result = $database->execute($sql, $parameters, 'all');
-//
-//	if (!empty($result)) {
-//		foreach ($result as $row) {
-//			if ($row['domain_setting_subcategory'] === maintenance::DATABASE_SUBCATEGORY) {
-//				$class_name = $row['domain_setting_category'];
-//				$maintenance_apps[$class_name]['database_maintenance'][$row['domain_uuid']] = $row;
-//			}
-//			if ($row['domain_setting_subcategory'] === maintenance::FILESYSTEM_SUBCATEGORY) {
-//				$class_name = $row['domain_setting_category'];
-//				$maintenance_apps[$class_name]['filesystem_maintenance'][$row['domain_uuid']] = $row;
-//			}
-//		}
-//	}
 	//get maintainers
-	$global_settings = new settings(['database' => $database]);
-	$maintainers = $global_settings->get('maintainers', 'application', []);
-	$domains = maintenance::get_domains($database);
-	foreach ($domains as $domain_uuid => $domain) {
-		
+	foreach ($classes as $maintainer) {
+
+		//database maintenance
+		if (maintenance::has_database_maintenance($maintainer)) {
+			$database_category = maintenance::get_database_category($maintainer);
+			$database_subcategory = maintenance::get_database_subcategory($maintainer);
+
+			//default settings
+			$setting_uuids = maintenance::get_uuids($database, 'default', $database_category, $database_subcategory, 'true');
+			if (!empty($setting_uuids)) {
+				foreach($setting_uuids as $uuid) {
+					$maintenance_apps[$database_category]['database_maintenance']['global'] = maintenance::get_value_by_uuid($database, 'default', $uuid);
+				}
+			} else {
+				$maintenance_apps[$database_category]['database_maintenance']['global']['default_setting_enabled'] = false;
+			}
+
+			//domain settings
+			$setting_uuids = maintenance::get_uuids($database, 'domain', $database_category, $database_subcategory, 'true');
+			foreach ($setting_uuids as $uuid) {
+				$record = maintenance::get_value_by_uuid($database, 'domain', $uuid);
+				if (!empty($record)) {
+					$maintenance_apps[$database_category]['database_maintenance'][$record['domain_uuid']] = $record;
+				} else {
+					$maintenance_apps[$database_category]['database_maintenance'][$record['domain_uuid']]['domain_setting_enabled'] = false;
+				}
+			}
+		}
+
+		//filesystem maintenance
+		if (maintenance::has_filesystem_maintenance($maintainer)) {
+			$filesystem_category = maintenance::get_filesystem_category($maintainer);
+			$filesystem_subcategory = maintenance::get_filesystem_subcategory($maintainer);
+
+			//default settings
+			$setting_uuids = maintenance::get_uuids($database, 'default', $filesystem_category, $filesystem_subcategory, 'true');
+			if (!empty($setting_uuids)) {
+				foreach ($setting_uuids as $uuid) {
+					$maintenance_apps[$filesystem_category]['filesystem_maintenance']['global'] = maintenance::get_value_by_uuid($database, 'default', $uuid);
+				}
+			} else {
+				$maintenance_apps[$filesystem_category]['filesystem_maintenance']['global']['default_setting_enabled'] = false;
+			}
+
+			//domain settings
+			$setting_uuids = maintenance::get_uuids($database, 'domain', $filesystem_category, $filesystem_subcategory, 'true');
+			foreach ($setting_uuids as $uuid) {
+				$record = maintenance::get_value_by_uuid($filesystem, 'domain', $uuid);
+				if (!empty($record)) {
+					$maintenance_apps[$filesystem_category]['filesystem_maintenance'][$record['domain_uuid']] = $record;
+				} else {
+					$maintenance_apps[$filesystem_category]['filesystem_maintenance'][$record['domain_uuid']]['domain_setting_enabled'] = false;
+				}
+			}
+		}
+
+
 	}
 }
 else {
 	//use the settings object to get the maintenance apps and their values
-	$domain_settings = new settings(['database'=>$database, 'domain_uuid' => $_SESSION['domain_uuid'] ?? '']);
-	$maintainers = $domain_settings->get('maintenance', 'application', []);
-	foreach ($maintainers as $maintainer) {
+	foreach ($classes as $maintainer) {
 		//database retention days
 		$category = maintenance::get_database_category($maintainer);
 		$subcategory = maintenance::get_database_subcategory($maintainer);
@@ -206,6 +194,9 @@ else {
 	}
 
 }
+
+//sort the result
+ksort($maintenance_apps);
 
 //set URL parameters
 $url_params = '';
@@ -233,7 +224,7 @@ require_once dirname(__DIR__, 2) . '/resources/header.php';
 $document['title'] = $text['title-maintenance'];
 
 echo "<div class='action_bar' id='action_bar'>";
-echo "	<div class='heading'><b>Maintenance (".count($classes).")</b></div>";
+echo "	<div class='heading'><b>Maintenance</b></div>";
 echo "	<div class='actions'>";
 echo button::create(['type'=>'button','label'=>$text['button-logs'],'icon'=>'fas fa-scroll fa-fw','id'=>'btn_logs', 'link'=>'maintenance_logs.php']);
 //show all
