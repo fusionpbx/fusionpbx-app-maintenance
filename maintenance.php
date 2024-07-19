@@ -175,6 +175,7 @@ if ($show_all) {
 else {
 	//use the settings object to get the maintenance apps and their values
 	foreach ($classes as $maintainer) {
+		$domain_settings = new settings(['database' => $database, 'domain_uuid' => $_SESSION['domain_uuid'] ?? $domain_uuid]);
 		//database retention days
 		$category = maintenance::get_database_category($maintainer);
 		$subcategory = maintenance::get_database_subcategory($maintainer);
