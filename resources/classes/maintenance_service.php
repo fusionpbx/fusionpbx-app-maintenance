@@ -175,6 +175,7 @@ class maintenance_service extends service {
 		//sleep seconds between tests for matching the current time to the execute time
 		$this->check_interval = intval($this->settings->get('maintenance', 'check_interval', 33));
 
+		self::log("Settings Reloaded", LOG_INFO);
 	}
 
 	/**
@@ -268,7 +269,17 @@ class maintenance_service extends service {
 		//ensure the log_flush is not used to hijack the log_write function
 		if (self::$logs !== null && count(self::$logs) > 0) {
 			$array['maintenance_logs'] = self::$logs;
+			//write to the database
 			self::$db->save($array, false);
+			//write each log entry to syslog
+			foreach (self::$logs as $log_entry) {
+				$message = "domain=" . $log_entry['domain_uuid']
+					. ", application=" . $log_entry['maintenance_log_application']
+					. ", message=" . $log_entry['maintenance_log_message']
+					. ", status=" . $log_entry['maintenance_log_status'];
+				self::log($message);
+			}
+			//clear the log queue
 			self::$logs = [];
 		}
 	}
