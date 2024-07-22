@@ -190,8 +190,8 @@ if ($maintenance_logs === false) {
 }
 
 //create token
-//$token = new token;
-//$token_arr = $token->create($_SERVER['PHP_SELF']);
+$token = new token;
+$token_arr = $token->create($_SERVER['PHP_SELF']);
 
 //include the header
 $document['title'] = $text['title-maintenance_logs'];
