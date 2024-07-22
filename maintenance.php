@@ -160,7 +160,7 @@ if ($show_all) {
 			//domain settings
 			$setting_uuids = maintenance::get_uuids($database, 'domain', $filesystem_category, $filesystem_subcategory, 'true');
 			foreach ($setting_uuids as $uuid) {
-				$record = maintenance::get_value_by_uuid($filesystem, 'domain', $uuid);
+				$record = maintenance::get_value_by_uuid($database, 'domain', $uuid);
 				if (!empty($record)) {
 					$maintenance_apps[$filesystem_category]['filesystem_maintenance'][$record['domain_uuid']] = $record;
 				} else {
