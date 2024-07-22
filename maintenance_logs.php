@@ -200,7 +200,7 @@ require_once "resources/header.php";
 //show the content
 echo "<div class='action_bar' id='action_bar'>\n";
 echo "	<div class='heading'>";
-echo "		<b>".$text['title-maintenance_logs']." (".$num_rows.")</b>";
+echo "		<b>".$text['title-maintenance_logs']."</b>";
 echo "	</div>\n";
 echo "	<div class='actions'>\n";
 //button back
