@@ -21,17 +21,17 @@ Shows the maintenance applications currently active and their retention days on 
 ## Developer Friendly
 Quickly create new maintenance applications by adding a ``public static function database_maintenance(settings $settings): void {}`` to handle any database work and/or a ``public static function filesystem_maintenance(settings $settings): void {}`` to handle any filesystem work in your existing class or create a new class that uses one or both methods. The maintenance application will automatically find it and register the application when **App Defaults** has been executed. Once the application is enabled in default settings, the application will execute on the next cycle.
 
-### Screenshots
+## Screenshots
 
-## Dashboard
+### Dashboard
 
 ![dashboard](https://github.com/fusionpbx/fusionpbx-app-maintenance/blob/main/resources/images/screenshot_dashboard.png)
 
-## Maintenance Page
+### Maintenance Page
 
 ![maintenance page](https://github.com/fusionpbx/fusionpbx-app-maintenance/blob/main/resources/images/screenshot_maintenace.png)
 
-## Maintenance Logs
+### Maintenance Logs
 
 ![maintenance logs](https://github.com/fusionpbx/fusionpbx-app-maintenance/blob/main/resources/images/screenshot_maintenance_logs.png)
 
