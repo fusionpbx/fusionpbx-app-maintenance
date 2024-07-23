@@ -27,7 +27,7 @@ Quickly create new maintenance applications by adding a ``public static function
 
 ![dashboard](https://github.com/fusionpbx/fusionpbx-app-maintenance/blob/main/resources/images/screenshot_dashboard.png)
 
-## Maintenance Page {maintenance_page}
+## Maintenance Page
 
 ![maintenance page](https://github.com/fusionpbx/fusionpbx-app-maintenance/blob/main/resources/images/screenshot_maintenace.png)
 
