@@ -160,8 +160,8 @@ class maintenance {
 		return $default_value;
 	}
 
-	public static function get_database_retention_days(settings $settings, $class_name): string {
-		return $settings->get(self::get_database_category($class_name), self::get_database_subcategory($class_name), '');
+	public static function get_database_retention_days(settings $settings, $class_name, $default_value = ''): string {
+		return $settings->get(self::get_database_category($class_name), self::get_database_subcategory($class_name), $default_value);
 	}
 
 	/**
@@ -194,8 +194,8 @@ class maintenance {
 		return $default_value;
 	}
 
-	public static function get_filesystem_retention_days(settings $settings, $class_name): string {
-		return $settings->get(self::get_filesystem_category($class_name), self::get_filesystem_subcategory($class_name), '');
+	public static function get_filesystem_retention_days(settings $settings, $class_name, $default_value = ''): string {
+		return $settings->get(self::get_filesystem_category($class_name), self::get_filesystem_subcategory($class_name), $default_value);
 	}
 
 	/**
