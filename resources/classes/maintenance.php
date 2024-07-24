@@ -516,7 +516,7 @@ class maintenance {
 	 * @param string $category Main category
 	 * @param string $subcategory Subcategory or name of the setting
 	 * @param bool $status Used for internal use but could be used to find a setting that is currently disabled
-	 * @return array Two-dimensional array of matching database records<br>
+	 * @return array Two-dimensional array of matching database records
 	 * @access public
 	 */
 	public static function find_all_uuids(database $database, string $category, string $subcategory, bool $status = true): array {
