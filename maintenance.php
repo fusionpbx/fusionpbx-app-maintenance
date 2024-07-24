@@ -121,7 +121,7 @@ if ($show_all) {
 			$database_subcategory = maintenance::get_database_subcategory($maintainer);
 
 			//default settings
-			$setting_uuids = maintenance::get_uuids($database, 'default', $database_category, $database_subcategory, 'true');
+			$setting_uuids = maintenance::get_all_uuids($database, 'default', $database_category, $database_subcategory, 'true');
 			if (!empty($setting_uuids)) {
 				foreach($setting_uuids as $uuid) {
 					$maintenance_apps[$database_category]['database_maintenance']['global'] = maintenance::get_value_by_uuid($database, 'default', $uuid);
@@ -131,7 +131,7 @@ if ($show_all) {
 			}
 
 			//domain settings
-			$setting_uuids = maintenance::get_uuids($database, 'domain', $database_category, $database_subcategory, 'true');
+			$setting_uuids = maintenance::get_all_uuids($database, 'domain', $database_category, $database_subcategory, 'true');
 			foreach ($setting_uuids as $uuid) {
 				$record = maintenance::get_value_by_uuid($database, 'domain', $uuid);
 				if (!empty($record)) {
