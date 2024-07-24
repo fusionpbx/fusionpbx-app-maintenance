@@ -177,18 +177,16 @@ else {
 	foreach ($classes as $maintainer) {
 		$domain_settings = new settings(['database' => $database, 'domain_uuid' => $_SESSION['domain_uuid'] ?? $domain_uuid]);
 		//database retention days
-		$category = maintenance::get_database_category($maintainer);
-		$subcategory = maintenance::get_database_subcategory($maintainer);
-		$database_retention_days = $domain_settings->get($category, $subcategory, '');
+		$database_retention_days = maintenance::get_database_retention_days($domain_settings, $maintainer);
 		if (!empty($database_retention_days)) {
+			$category = maintenance::get_database_category($maintainer);
 			$maintenance_apps[$category]['database_maintenance'][$domain_uuid]['domain_setting_value'] = $database_retention_days;
 			$maintenance_apps[$category]['database_maintenance'][$domain_uuid]['domain_setting_enabled'] = 'true';
 		}
 		//filesystem retention days
-		$category = maintenance::get_filesystem_category($maintainer);
-		$subcategory = maintenance::get_filesystem_subcategory($maintainer);
-		$filesystem_retention_days = $domain_settings->get($category, $subcategory, '');
+		$filesystem_retention_days = maintenance::get_filesystem_retention_days($domain_settings, $maintainer);
 		if (!empty($filesystem_retention_days)) {
+			$category = maintenance::get_filesystem_category($maintainer);
 			$maintenance_apps[$category]['filesystem_maintenance'][$domain_uuid]['domain_setting_value'] = $filesystem_retention_days;
 			$maintenance_apps[$category]['filesystem_maintenance'][$domain_uuid]['domain_setting_enabled'] = 'true';
 		}
