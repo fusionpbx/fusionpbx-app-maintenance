@@ -65,18 +65,20 @@ class maintenance_logs implements database_maintenance {
 			//get the settings for this domain
 			$domain_settings = new $settings(['database' => $database, 'domain_uuid' => $domain_uuid]);
 			//get retention days using the class defined category and subcategory
-			$retention = $domain_settings->get(self::database_maintenance_category(), self::database_maintenance_subcategory(), '');
+			$retention_days = $domain_settings->get(self::database_maintenance_category(), self::database_maintenance_subcategory(), '');
 			//ensure there is something to do
-			if (!empty($retention) && is_numeric($retention)) {
+			if (!empty($retention_days) && is_numeric($retention_days)) {
 				//delete old entries for this domain
-				$database->execute("delete from v_{$table} where insert_date < NOW() - INTERVAL '{$retention} days' and domain_uuid = '{$domain_uuid}'");
+				$database->execute("delete from v_{$table} where insert_date < NOW() - INTERVAL '{$retention_days} days' and domain_uuid = '{$domain_uuid}'");
+				$code = $database->message['code'] ?? 0;
 				//ensure the removal was successful
-				if ($database->message['code'] === '200') {
+				if ($database->message['code'] == 200) {
 					//log success
-					maintenance_service::log_write(self::class, "Removed maintenance log entries older than $retention days", $domain_uuid);
+					maintenance_service::log_write(self::class, "Successfully removed entries older than $retention_days", $domain_uuid);
 				} else {
 					//log failure
-					maintenance_service::log_write(self::class, "Failed to clear entries for $domain_name", $domain_uuid, maintenance_service::LOG_ERROR);
+					$message = $database->message['message'] ?? "An unknown error has occurred";
+					maintenance_service::log_write(self::class, "Unable to remove old database records. Error message: $message ($code)", $domain_uuid, maintenance_service::LOG_ERROR);
 				}
 			} else {
 				//database retention not set or not a valid number
