@@ -557,6 +557,43 @@ class maintenance {
 	}
 
 	/**
+	 * Searches the database using prepared data structures and returns all matching uuids ignoring domain name and user name
+	 * @param database $database Database object
+	 * @param string $table Either 'default' or 'domain'
+	 * @param string $category Category value to match
+	 * @param string $subcategory Subcategory value to match
+	 * @param string $status Either 'true' or 'false'
+	 * @return array
+	 */
+	public static function get_all_uuids(database $database, string $table, string $category, string $subcategory, string $status): array {
+		$uuids = [];
+		$sql = "select {$table}_setting_uuid from v_{$table}_settings s";
+		$sql .= " where s.{$table}_setting_category = :category";
+		$sql .= " and s.{$table}_setting_subcategory = :subcategory";
+		$sql .= " and s.{$table}_setting_enabled = '$status'";
+
+		//set search params
+		$params = [];
+		$params['category'] = $category;
+		$params['subcategory'] = $subcategory;
+		$result = $database->select($sql, $params);
+		if (!empty($result)) {
+			if (is_array($result)) {
+				$uuids = array_map(function ($value) use ($table) {
+					if (is_array($value)) {
+						return $value["{$table}_setting_uuid"];
+					} else {
+						return $value;
+					}
+				}, $result);
+			} else {
+				$uuids[] = $result;
+			}
+		}
+		return $uuids;
+	}
+
+	/**
 	 * Returns the record set of the UUID in the table or an empty array
 	 * @param database $database
 	 * @param string $table Either 'domain' or 'default'
