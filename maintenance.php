@@ -112,64 +112,34 @@ $classes = $default_settings->get('maintenance', 'application', []);
 $maintenance_apps = [];
 
 if ($show_all) {
+	//get a list of domain names
+	$domains = maintenance::get_domains($database);
+
 	//get maintainers
 	foreach ($classes as $maintainer) {
+		$tasks = ['database', 'filesystem'];
+		foreach ($tasks as $task) {
+			$has_task = "has_{$task}_maintenance";
+			if (maintenance::$has_task($maintainer)) {
+				$category_method = "get_{$task}_category";
+				$subcategory_method = "get_{$task}_subcategory";
+				$category = maintenance::$category_method($maintainer);
+				$subcategory = maintenance::$subcategory_method($maintainer);
 
-		//database maintenance
-		if (maintenance::has_database_maintenance($maintainer)) {
-			$database_category = maintenance::get_database_category($maintainer);
-			$database_subcategory = maintenance::get_database_subcategory($maintainer);
-
-			//default settings
-			$setting_uuids = maintenance::get_all_uuids($database, 'default', $database_category, $database_subcategory, 'true');
-			if (!empty($setting_uuids)) {
-				foreach($setting_uuids as $uuid) {
-					$maintenance_apps[$database_category]['database_maintenance']['global'] = maintenance::get_value_by_uuid($database, 'default', $uuid);
-				}
-			} else {
-				$maintenance_apps[$database_category]['database_maintenance']['global']['default_setting_enabled'] = false;
-			}
-
-			//domain settings
-			$setting_uuids = maintenance::get_all_uuids($database, 'domain', $database_category, $database_subcategory, 'true');
-			foreach ($setting_uuids as $uuid) {
-				$record = maintenance::get_value_by_uuid($database, 'domain', $uuid);
-				if (!empty($record)) {
-					$maintenance_apps[$database_category]['database_maintenance'][$record['domain_uuid']] = $record;
-				} else {
-					$maintenance_apps[$database_category]['database_maintenance'][$record['domain_uuid']]['domain_setting_enabled'] = false;
+				//get all UUIDs in the database associated with this setting
+				$uuids = maintenance::find_all_uuids($database, $category, $subcategory);
+				foreach ($uuids as $match) {
+					$uuid = $match['uuid'];
+					$status = $match['status'];
+					$table = $match['table'];
+					$domain_uuid = $match['domain_uuid'] ?? 'global';
+					$value = $match['value'];
+					$maintenance_apps[$category]["{$task}_maintenance"][$domain_uuid]["{$table}_setting_enabled"] = $match['status'];
+					$maintenance_apps[$category]["{$task}_maintenance"][$domain_uuid]["{$table}_setting_value"] = $value;
+					$maintenance_apps[$category]["{$task}_maintenance"][$domain_uuid]["{$table}_setting_uuid"] = $uuid;
 				}
 			}
 		}
-
-		//filesystem maintenance
-		if (maintenance::has_filesystem_maintenance($maintainer)) {
-			$filesystem_category = maintenance::get_filesystem_category($maintainer);
-			$filesystem_subcategory = maintenance::get_filesystem_subcategory($maintainer);
-
-			//default settings
-			$setting_uuids = maintenance::get_uuids($database, 'default', $filesystem_category, $filesystem_subcategory, 'true');
-			if (!empty($setting_uuids)) {
-				foreach ($setting_uuids as $uuid) {
-					$maintenance_apps[$filesystem_category]['filesystem_maintenance']['global'] = maintenance::get_value_by_uuid($database, 'default', $uuid);
-				}
-			} else {
-				$maintenance_apps[$filesystem_category]['filesystem_maintenance']['global']['default_setting_enabled'] = false;
-			}
-
-			//domain settings
-			$setting_uuids = maintenance::get_uuids($database, 'domain', $filesystem_category, $filesystem_subcategory, 'true');
-			foreach ($setting_uuids as $uuid) {
-				$record = maintenance::get_value_by_uuid($database, 'domain', $uuid);
-				if (!empty($record)) {
-					$maintenance_apps[$filesystem_category]['filesystem_maintenance'][$record['domain_uuid']] = $record;
-				} else {
-					$maintenance_apps[$filesystem_category]['filesystem_maintenance'][$record['domain_uuid']]['domain_setting_enabled'] = false;
-				}
-			}
-		}
-
-
 	}
 }
 else {
