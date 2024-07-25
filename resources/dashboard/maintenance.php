@@ -193,7 +193,7 @@ if (permission_exists('maintenance_view')) {
 	//show the box
 	echo "<div class='hud_box'>";
 	echo "	<div class='hud_content' onclick=\"$('#hud_maintenance_details').slideToggle('fast'); toggle_grid_row_end('Maintenance')\">";
-	echo "		<span class='hud_title' onclick=\"document.location.href='/app/maintenance/maintenance.php'\">".$text['label-maintenance']."</span>";
+	echo "		<span class='hud_title'><a onclick=\"document.location.href='/app/maintenance/maintenance.php'\">".$text['label-maintenance']."</a></span>";
 	echo "		<script src='/app/maintenance/resources/javascript/maintenance_functions.js'></script>";
 	if ($dashboard_chart_type === 'doughnut') {
 		//add an event listener for showing and hiding the days input box
@@ -208,11 +208,11 @@ if (permission_exists('maintenance_view')) {
 		echo "					datasets: [{\n";
 		echo "						data: [".$total_running_maintenance_apps.", ".($total_maintenance_apps - $total_running_maintenance_apps)."],\n";
 		echo "						backgroundColor: [\n";
-		echo "							'".($settings->get('theme', 'dashboard_maintenance_chart_main_color') ?? "#2a9df4")."',\n";
-		echo "							'".($settings->get('theme', 'dashboard_maintenance_chart_sub_color') ?? "#d4d4d4")."'\n";
+		echo "							'".($setting->get('theme', 'dashboard_maintenance_chart_main_color') ?? "#2a9df4")."',\n";
+		echo "							'".($setting->get('theme', 'dashboard_maintenance_chart_sub_color') ?? "#d4d4d4")."'\n";
 		echo "						],\n";
-		echo "						borderColor: '".$settings->get('theme', 'dashboard_chart_border_color')."',\n";
-		echo "						borderWidth: '".$settings->get('theme', 'dashboard_chart_border_width')."',\n";
+		echo "						borderColor: '".$setting->get('theme', 'dashboard_chart_border_color')."',\n";
+		echo "						borderWidth: '".$setting->get('theme', 'dashboard_chart_border_width')."',\n";
 		echo "					}]\n";
 		echo "				},\n";
 		echo "				options: {\n";
@@ -345,7 +345,12 @@ if (permission_exists('maintenance_view')) {
 				echo "	</label>";
 				echo "</td>";
 			} else {
-				echo "<td valign='top' class='".$row_style[$c]." hud_text'>$database_status</td>";
+				echo "<td valign='top' class='".$row_style[$c]." hud_text input tr_link_void' style='width: 1%; text-align: center;'>";
+				echo "	<select class='formfld' name='database_retention_days[$x][status]'>";
+				echo "		<option value='true' ".($database_checkbox_state === CHECKBOX_CHECKED ? "selected='selected'" : null)." onclick=\"this.selected ? show_input_box('database_days_$x') : null;\">".$text['option-true']."</option>";
+				echo "		<option value='false' ".($database_checkbox_state === CHECKBOX_UNCHECKED ? "selected='selected'" : null)." onclick=\"this.selected ? hide_input_box('database_days_$x') : null;\">".$text['option-false']."</option>";
+				echo "	</select>";
+				echo "</td>";
 			}
 		} else {
 			//not a database maintenance application
@@ -388,14 +393,12 @@ if (permission_exists('maintenance_view')) {
 				echo "		<span class='slider'></span>";
 				echo "	</label>";
 				echo "</td>";
-			}
-			else {
-				echo "<td valign='top' class='".$row_style[$c]." hud_text'>";
-				if ($show_filesystem_days) {
-					echo $filesystem_enabled;
-				} else {
-					echo "&nbsp;";
-				}
+			} else {
+				echo "<td valign='top' class='".$row_style[$c]." hud_text input tr_link_void' style='width: 1%; text-align: center;'>";
+				echo "	<select class='formfld' id='filesystem_enabled_$x' name='filesystem_retention_days[$x][status]'>";
+				echo "		<option value='true' ".($filesystem_checkbox_state === CHECKBOX_CHECKED ? "selected='selected'" : null)." onclick=\"this.selected ? show_input_box('filesystem_days_$x') : null;\">".$text['option-true']."</option>";
+				echo "		<option value='false' ".($filesystem_checkbox_state === CHECKBOX_UNCHECKED ? "selected='selected'" : null)." onclick=\"this.selected ? hide_input_box('filesystem_days_$x') : null;\">".$text['option-false']."</option>";
+				echo "	</select>";
 				echo "</td>";
 			}
 		} else {
