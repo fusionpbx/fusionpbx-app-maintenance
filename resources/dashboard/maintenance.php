@@ -69,21 +69,23 @@
 				header('HTTP/1.1 403 Forbidden', true, 403);
 				die();
 			}
-			$category = $row['category'];
-			$subcategory = $row['subcategory'];
-			$days = $row['days'];
-			$status = $row['status'];
-			$records["{$table}_settings"][$index]["{$table}_setting_uuid"] = $uuid;
-			$records["{$table}_settings"][$index]["{$table}_setting_category"] = $row['category'];
-			$records["{$table}_settings"][$index]["{$table}_setting_subcategory"] = $row['subcategory'];
-			$records["{$table}_settings"][$index]["{$table}_setting_value"] = $days;
-			$records["{$table}_settings"][$index]["{$table}_setting_name"] = 'numeric';
-			$records["{$table}_settings"][$index]["{$table}_setting_enabled"] = $row['status'];
-			if (!$update_permissions->exists("v_{$table}_setting_add")) {
-				$update_permissions->add("v_{$table}_setting_add", 'temp');
+			$category = $row['category'] ?? '';
+			$subcategory = $row['subcategory'] ?? '';
+			if (!empty($category) && !empty($subcategory)) {
+				$days = $row['days'];
+				$status = $row['status'];
+				$records["{$table}_settings"][$index]["{$table}_setting_uuid"] = $uuid;
+				$records["{$table}_settings"][$index]["{$table}_setting_category"] = $row['category'];
+				$records["{$table}_settings"][$index]["{$table}_setting_subcategory"] = $row['subcategory'];
+				$records["{$table}_settings"][$index]["{$table}_setting_value"] = $days;
+				$records["{$table}_settings"][$index]["{$table}_setting_name"] = 'numeric';
+				$records["{$table}_settings"][$index]["{$table}_setting_enabled"] = $row['status'];
+				if (!$update_permissions->exists("v_{$table}_setting_add")) {
+					$update_permissions->add("v_{$table}_setting_add", 'temp');
+				}
+				//compare the current value with the default setting
+				$index++;
 			}
-			//compare the current value with the default setting
-			$index++;
 		}
 		if (count($records) > 0) {
 			$database->save($records);
@@ -113,8 +115,8 @@
 			}
 			$filesystem_category = $row['category'] ?? '';
 			$filesystem_subcategory = $row['subcategory'] ?? '';
-			$days = $row['days'] ?? '';
 			if (!empty($filesystem_category) && !empty($filesystem_subcategory) && !empty($days)) {
+				$days = $row['days'] ?? '';
 				$records["{$table}_settings"][$index]["{$table}_setting_uuid"] = $uuid;
 				$records["{$table}_settings"][$index]["{$table}_setting_category"] = $filesystem_category;
 				$records["{$table}_settings"][$index]["{$table}_setting_subcategory"] = $filesystem_subcategory;
@@ -275,6 +277,8 @@ if (permission_exists('maintenance_view')) {
 		$filesystem_subcategory = '';
 		$filesystem_checkbox_state = CHECKBOX_HIDDEN;
 		$database_checkbox_state = CHECKBOX_HIDDEN;
+		$database_default_value = "";
+		$filesystem_default_value = "";
 		$param = [];
 		if (class_exists($maintenance_app)) {
 			$display_name = $maintenance_app;
