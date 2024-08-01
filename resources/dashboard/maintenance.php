@@ -257,7 +257,9 @@ if (permission_exists('maintenance_view')) {
 	echo "	<form id='form_list_maintainers' name='form_list_maintainers' method='POST'>";
 	echo "		<div class='hud_details hud_box' id='hud_maintenance_details' style='text-align: right'>";
 	//save button for changes
-	echo "			<button type='button' alt='Save' title='Save' onclick=\"list_form_submit('form_list_maintainers');\" class='btn btn-default ' style='position: absolute; margin-top: -35px; margin-left: -72px;'><span class='fas fa-bolt fa-fw'></span><span class='button-label  pad'>Save</span></button>";
+	if (permission_exists('maintenance_edit')) {
+		echo "		<button type='button' alt='Save' title='Save' onclick=\"list_form_submit('form_list_maintainers');\" class='btn btn-default ' style='position: absolute; margin-top: -35px; margin-left: -72px;'><span class='fas fa-bolt fa-fw'></span><span class='button-label  pad'>Save</span></button>";
+	}
 	echo "			<table class='tr_hover' width='100%' cellpadding='0' cellspacing='0' border='0'>";
 	echo "				<tr style='position: -webkit-sticky; position: sticky; z-index: 5; top: 0; left: 2px;'>";
 	echo "					<th class='hud_heading' style='width: 40%;'>".($text['label-app'] ?? 'Application')."</th>";
@@ -339,27 +341,34 @@ if (permission_exists('maintenance_view')) {
 		// Database apps
 		//
 		//hide or show database maintenance ability
-		if ($database_checkbox_state !== CHECKBOX_HIDDEN) {
-			//enable or disable checkbox
-			if (substr($setting->get('theme','input_toggle_style', ''), 0, 6) == 'switch') {
-				echo "<td valign='top' class='".$row_style[$c]." hud_text input tr_link_void' style='width: 1%; text-align: center;'>";
-				echo "	<label class='switch'>";
-				echo "		<input type='checkbox' name='database_retention_days[$x][status]' value='true' $database_checked onclick=\"this.checked ? show_input_box('database_days_$x') : hide_input_box('database_days_$x');\">";
-				echo "		<span class='slider'></span>";
-				echo "	</label>";
-				echo "</td>";
+		echo "	<td valign='top' class='".$row_style[$c]." hud_text input tr_link_void' style='width: 1%; text-align: center;'>";
+		if (permission_exists('maintenance_edit')) {
+			if ($database_checkbox_state !== CHECKBOX_HIDDEN) {
+				//enable or disable checkbox
+				if (substr($setting->get('theme','input_toggle_style', ''), 0, 6) == 'switch') {
+					echo "<label class='switch'>";
+					echo "	<input type='checkbox' name='database_retention_days[$x][status]' value='true' $database_checked onclick=\"this.checked ? show_input_box('database_days_$x') : hide_input_box('database_days_$x');\">";
+					echo "	<span class='slider'></span>";
+					echo "</label>";
+				} else {
+					echo "<select class='formfld' name='database_retention_days[$x][status]'>";
+					echo "	<option value='true' ".($database_checkbox_state === CHECKBOX_CHECKED ? "selected='selected'" : null)." onclick=\"this.selected ? show_input_box('database_days_$x') : null;\">".$text['label-enabled']."</option>";
+					echo "	<option value='false' ".($database_checkbox_state === CHECKBOX_UNCHECKED ? "selected='selected'" : null)." onclick=\"this.selected ? hide_input_box('database_days_$x') : null;\">".$text['label-disabled']."</option>";
+					echo "</select>";
+				}
 			} else {
-				echo "<td valign='top' class='".$row_style[$c]." hud_text input tr_link_void' style='width: 1%; text-align: center;'>";
-				echo "	<select class='formfld' name='database_retention_days[$x][status]'>";
-				echo "		<option value='true' ".($database_checkbox_state === CHECKBOX_CHECKED ? "selected='selected'" : null)." onclick=\"this.selected ? show_input_box('database_days_$x') : null;\">".$text['option-true']."</option>";
-				echo "		<option value='false' ".($database_checkbox_state === CHECKBOX_UNCHECKED ? "selected='selected'" : null)." onclick=\"this.selected ? hide_input_box('database_days_$x') : null;\">".$text['option-false']."</option>";
-				echo "	</select>";
-				echo "</td>";
+				//not a database maintenance application
+				echo "&nbsp;";
 			}
 		} else {
-			//not a database maintenance application
-			echo "<td valign='top' class='".$row_style[$c]." hud_text'>&nbsp;</td>";
+			if ($database_checkbox_state !== CHECKBOX_HIDDEN) {
+				echo $database_checkbox_state === CHECKBOX_CHECKED ? $text['label-enabled'] : $text['label-disabled'];
+			} else {
+				//not a database maintenance application
+				echo "&nbsp;";
+			}
 		}
+		echo "	</td>";
 		//database days input box
 		echo "	<td valign='top' class='".$row_style[$c]." hud_text input tr_link_void'>";
 		//hide the input box if we are hiding the checkbox
@@ -389,25 +398,32 @@ if (permission_exists('maintenance_view')) {
 		//
 		//filesystem apps
 		//
-		if ($filesystem_checkbox_state !== CHECKBOX_HIDDEN) {
-			if (substr($setting->get('theme','input_toggle_style', ''), 0, 6) == 'switch') {
-				echo "<td valign='top' class='".$row_style[$c]." hud_text input tr_link_void' style='width: 1%; text-align: center;'>";
-				echo "	<label class='switch'>";
-				echo "		<input type='checkbox' locked id='filesystem_enabled_$x' name='filesystem_retention_days[$x][status]' value='true' $filesystem_checked onclick=\"this.checked ? show_input_box('filesystem_days_$x') : hide_input_box('filesystem_days_$x');\">";
-				echo "		<span class='slider'></span>";
-				echo "	</label>";
-				echo "</td>";
+		echo "	<td valign='top' class='".$row_style[$c]." hud_text input tr_link_void' style='width: 1%; text-align: center;'>";
+		if (permission_exists('maintenance_edit')) {
+			if ($filesystem_checkbox_state !== CHECKBOX_HIDDEN) {
+				if (substr($setting->get('theme','input_toggle_style', ''), 0, 6) == 'switch') {
+					echo "<label class='switch'>";
+					echo "	<input type='checkbox' locked id='filesystem_enabled_$x' name='filesystem_retention_days[$x][status]' value='true' $filesystem_checked onclick=\"this.checked ? show_input_box('filesystem_days_$x') : hide_input_box('filesystem_days_$x');\">";
+					echo "	<span class='slider'></span>";
+					echo "</label>";
+				} else {
+					echo "<select class='formfld' id='filesystem_enabled_$x' name='filesystem_retention_days[$x][status]'>";
+					echo "	<option value='true' ".($filesystem_checkbox_state === CHECKBOX_CHECKED ? "selected='selected'" : null)." onclick=\"this.selected ? show_input_box('filesystem_days_$x') : null;\">".$text['label-enabled']."</option>";
+					echo "	<option value='false' ".($filesystem_checkbox_state === CHECKBOX_UNCHECKED ? "selected='selected'" : null)." onclick=\"this.selected ? hide_input_box('filesystem_days_$x') : null;\">".$text['label-disabled']."</option>";
+					echo "</select>";
+				}
 			} else {
-				echo "<td valign='top' class='".$row_style[$c]." hud_text input tr_link_void' style='width: 1%; text-align: center;'>";
-				echo "	<select class='formfld' id='filesystem_enabled_$x' name='filesystem_retention_days[$x][status]'>";
-				echo "		<option value='true' ".($filesystem_checkbox_state === CHECKBOX_CHECKED ? "selected='selected'" : null)." onclick=\"this.selected ? show_input_box('filesystem_days_$x') : null;\">".$text['option-true']."</option>";
-				echo "		<option value='false' ".($filesystem_checkbox_state === CHECKBOX_UNCHECKED ? "selected='selected'" : null)." onclick=\"this.selected ? hide_input_box('filesystem_days_$x') : null;\">".$text['option-false']."</option>";
-				echo "	</select>";
-				echo "</td>";
+				echo "&nbsp;";
 			}
 		} else {
-			echo "<td valign='top' class='".$row_style[$c]." hud_text'>&nbsp;</td>";
+			if ($filesystem_checkbox_state !== CHECKBOX_HIDDEN) {
+				echo $filesystem_checkbox_state === CHECKBOX_CHECKED ? $text['label-enabled'] : $text['label-disabled'];
+			} else {
+				//not a database maintenance application
+				echo "&nbsp;";
+			}
 		}
+		echo "	</td>";
 		//filesystem days input box
 		echo "	<td valign='top' class='".$row_style[$c]." hud_text input tr_link_void'>";
 		//hide the input box if we are hiding the checkbox
