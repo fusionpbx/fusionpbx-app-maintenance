@@ -223,17 +223,18 @@ echo "	<br/><br/>";
 echo "	<form id='form_list' method='post'>";
 echo "		<input type='hidden' id='action' name='action' value=''>";
 echo "		<input type='hidden' name='search' value=\"".escape($search)."\">";
-echo "		<table class='list'>";
-echo "			<tr class='list-header'>";
-echo "				<th>Name</th>";
+echo "		<div class='card'>\n";
+echo "			<table class='list'>";
+echo "				<tr class='list-header'>";
+echo "					<th>Name</th>";
 if ($show_all) {
-	echo "			<th>Domain</th>";
+	echo "				<th>Domain</th>";
 }
-echo "				<th>Database Enabled</th>";
-echo "				<th>Retention Days</th>";
-echo "				<th>File System Enabled</th>";
-echo "				<th>Retention Days</th>";
-echo "			</tr>";
+echo "					<th>Database Enabled</th>";
+echo "					<th>Retention Days</th>";
+echo "					<th>File System Enabled</th>";
+echo "					<th>Retention Days</th>";
+echo "				</tr>";
 
 //list all maintenance applications from the defaults settings for global and each domain and show if they are enabled or disabled
 foreach ($maintenance_apps as $class => $app_settings) {
@@ -308,7 +309,8 @@ foreach ($maintenance_apps as $class => $app_settings) {
 		}
 	}
 }
-echo "		</table>";
+echo "			</table>";
+echo "		</div>";
 echo "		<input type='hidden' name='".$token['name']."' value='".$token['hash']."'>";
 echo "	</form>";
 echo "</div>";
