@@ -243,13 +243,14 @@ echo "<form id='form_list' method='post'>\n";
 echo "	<input type='hidden' id='action' name='action' value=''>\n";
 echo "	<input type='hidden' name='search' value=\"".escape($search)."\">\n";
 
-echo "	<table class='list'>\n";
+echo "	<div class='card'>\n";
+echo "		<table class='list'>\n";
 //header row
-echo "		<tr class='list-header'>\n";
+echo "			<tr class='list-header'>\n";
 if (permission_exists('maintenance_log_delete')) {
-	echo "		<th class='checkbox'>\n";
-	echo "			<input type='checkbox' id='checkbox_all' name='checkbox_all' onclick='list_all_toggle();' ".($maintenance_logs ?: "style='visibility: hidden;'").">\n";
-	echo "		</th>\n";
+	echo "			<th class='checkbox'>\n";
+	echo "				<input type='checkbox' id='checkbox_all' name='checkbox_all' onclick='list_all_toggle();' ".($maintenance_logs ?: "style='visibility: hidden;'").">\n";
+	echo "			</th>\n";
 }
 if ($show == 'all' && permission_exists('maintenance_log_all')) {
 	echo th_order_by('domain_name', $text['label-domain'], $order_by, $order);
@@ -260,9 +261,9 @@ echo th_order_by('status', $text['label-status'], $order_by, $order);
 echo th_order_by('message', $text['label-message'], $order_by, $order);
 //echo "<th class='left hide-md-dn'>".$text['label-message']."</th>\n";
 if (permission_exists('maintenance_log_edit') && $list_row_edit_button == 'true') {
-	echo "		<td class='action-button'>&nbsp;</td>\n";
+	echo "			<td class='action-button'>&nbsp;</td>\n";
 }
-echo "		</tr>\n";
+echo "			</tr>\n";
 
 //data rows
 if (is_array($maintenance_logs) && @sizeof($maintenance_logs) != 0) {
@@ -298,7 +299,8 @@ if (is_array($maintenance_logs) && @sizeof($maintenance_logs) != 0) {
 	}
 }
 
-echo "	</table>\n";
+echo "		</table>\n";
+echo "	</div>\n";
 echo "	<br />\n";
 echo "	<div align='center'>".$paging_controls."</div>\n";
 //echo new token;
