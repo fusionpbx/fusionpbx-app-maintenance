@@ -29,10 +29,34 @@
 $array['dashboard'][$x]['dashboard_uuid'] = '7ce1d732-06b4-4834-ac8f-c18d8fab81e0';
 $array['dashboard'][$x]['dashboard_name'] = 'Maintenance';
 $array['dashboard'][$x]['dashboard_path'] = 'app/maintenance/resources/dashboard/maintenance.php';
+$array['dashboard'][$x]['dashboard_icon'] = '';
+$array['dashboard'][$x]['dashboard_url'] = '';
+$array['dashboard'][$x]['dashboard_target'] = 'self';
+$array['dashboard'][$x]['dashboard_width'] = '';
+$array['dashboard'][$x]['dashboard_height'] = '';
+$array['dashboard'][$x]['dashboard_content'] = '';
+$array['dashboard'][$x]['dashboard_content_text_align'] = '';
+$array['dashboard'][$x]['dashboard_content_details'] = '';
+$array['dashboard'][$x]['dashboard_chart_type'] = '';
+$array['dashboard'][$x]['dashboard_label_enabled'] = 'true';
+$array['dashboard'][$x]['dashboard_label_text_color'] = '';
+$array['dashboard'][$x]['dashboard_label_text_color_hover'] = '';
+$array['dashboard'][$x]['dashboard_label_background_color'] = '';
+$array['dashboard'][$x]['dashboard_label_background_color_hover'] = '';
+$array['dashboard'][$x]['dashboard_number_background_color'] = '';
+$array['dashboard'][$x]['dashboard_number_text_color'] = '';
+$array['dashboard'][$x]['dashboard_number_text_color_hover'] = '';
+$array['dashboard'][$x]['dashboard_background_color'] ='';
+$array['dashboard'][$x]['dashboard_background_color_hover'] = '';
+$array['dashboard'][$x]['dashboard_detail_background_color'] = '';
+$array['dashboard'][$x]['dashboard_column_span'] = '1';
+$array['dashboard'][$x]['dashboard_row_span'] = '2';
+$array['dashboard'][$x]['dashboard_details_state'] = 'hidden';
 $array['dashboard'][$x]['dashboard_order'] = '190';
 $array['dashboard'][$x]['dashboard_enabled'] = 'true';
-$array['dashboard'][$x]['dashboard_type'] = 'none';
 $array['dashboard'][$x]['dashboard_description'] = 'System maintenance';
+
+
 $y = 0;
 $array['dashboard'][$x]['dashboard_groups'][$y]['dashboard_group_uuid'] = '6fb4d5c8-c95d-400f-b96c-edc044571a92';
 $array['dashboard'][$x]['dashboard_groups'][$y]['dashboard_uuid'] = '7ce1d732-06b4-4834-ac8f-c18d8fab81e0';
