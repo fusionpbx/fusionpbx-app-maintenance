@@ -228,7 +228,8 @@ if (permission_exists('maintenance_view')) {
 		echo "							reverse: true,\n";
 		echo "							labels: {\n";
 		echo "								usePointStyle: true,\n";
-		echo "								pointStyle: 'rect'\n";
+		echo "								pointStyle: 'rect',\n";
+		echo "								color: '".$dashboard_label_text_color."'\n";
 		echo "							}\n";
 		echo "						},\n";
 		echo "					}\n";
