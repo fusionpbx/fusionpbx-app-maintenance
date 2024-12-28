@@ -42,7 +42,7 @@ Quickly create new maintenance applications by adding a ``public static function
 ### Clone this repo to FusionPBX app folder:
 
 ```
-sudo git clone https://github.com/fusionpbx/fusionpbx-app-maintenace /var/www/fusionpbx/app/maintenance
+sudo git clone https://github.com/fusionpbx/fusionpbx-app-maintenance /var/www/fusionpbx/app/maintenance
 sudo chown -R www-data:www-data /var/www/fusionpbx/app/maintenance
 ```
 
