@@ -336,7 +336,12 @@ if (permission_exists('maintenance_view')) {
 		}
 		//display the maintanence application
 		echo "<tr>";
-		$display_name = ucwords(str_replace('_', ' ', $display_name));
+		if ($display_name === 'cdr') {
+			$display_name = strtoupper(str_replace('_','',$display_name));
+		}
+		else {
+			$display_name = ucwords(str_replace('_', ' ', $display_name));
+		}
 		echo "	<td valign='top' class='".$row_style[$c]." hud_text'>$display_name</td>";
 		//
 		// Database apps
