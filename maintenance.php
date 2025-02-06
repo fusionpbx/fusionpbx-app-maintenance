@@ -239,7 +239,11 @@ echo "				</tr>";
 //list all maintenance applications from the defaults settings for global and each domain and show if they are enabled or disabled
 foreach ($maintenance_apps as $class => $app_settings) {
 	//make the class name more user friendly
-	$display_name = ucwords(str_replace('_', ' ', $class));
+	if ($class === 'cdr') {
+	    $display_name = strtoupper(str_replace('_', ' ', $class));
+	} else {
+	    $display_name = ucwords(str_replace('_', ' ', $class));
+	}
 
 	//display global first
 	if ((isset($app_settings['database_maintenance']['global']) || isset($app_settings['filesystem_maintenance']['global'])) && $show_all) {
