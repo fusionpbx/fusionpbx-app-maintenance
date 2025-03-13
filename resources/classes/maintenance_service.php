@@ -164,7 +164,7 @@ class maintenance_service extends service {
 		$this->settings->reload();
 
 		//check if we are enabled to work or not
-		$this->enabled = $this->settings->get('maintenance', 'enabled', 'false') === 'true' ? true : false;
+		$this->enabled = $this->settings->get('maintenance', 'enabled', false) === true ? true : false;
 
 		//returns an array of maintenance applications
 		$this->maintenance_apps = $this->settings->get('maintenance', 'application', []);
@@ -497,5 +497,3 @@ class maintenance_service extends service {
 		return floor(self::weeks_since_modified($file) / 52);
 	}
 }
-
-?>

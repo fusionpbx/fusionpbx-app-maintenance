@@ -356,6 +356,11 @@ class maintenance {
 		}
 	}
 
+	/**
+	 * Finds class names that match the given method name
+	 * @param string $method_name Name of method to match in the class
+	 * @return array Names of classes or empty array if none found
+	 */
 	public static function find_classes_by_method(string $method_name): array {
 		//set defaults
 		$found_classes = [];
@@ -406,16 +411,16 @@ class maintenance {
 			if (!empty($apps[$x]['default_settings'])) {
 				foreach ($apps[$x]['default_settings'] as $setting) {
 					//get the subcategory
-					$category = $setting['default_setting_category'];
-					$subcategory = $setting['default_setting_subcategory'];
-					$value = $setting['default_setting_value'];
-					$type = $setting['default_setting_name'];
+					$category = $setting['default_setting_category'] ?? '';
+					$subcategory = $setting['default_setting_subcategory'] ?? '';
+					$value = $setting['default_setting_value'] ?? '';
+					$type = $setting['default_setting_name'] ?? '';
 					//check for array type
 					if ($type !== 'array') {
 						//store the values
 						self::$app_config_list[$category][$subcategory] = $value;
 					} else {
-						$order = intval($setting['default_setting_order']);
+						$order = intval($setting['default_setting_order'] ?? '0');
 						self::$app_config_list[$category][$subcategory][$order] = $value;
 					}
 				}
@@ -639,5 +644,3 @@ class maintenance {
 	}
 
 }
-
-?>

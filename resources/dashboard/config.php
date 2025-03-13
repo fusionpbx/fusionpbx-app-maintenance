@@ -61,5 +61,3 @@ $y = 0;
 $array['dashboard'][$x]['dashboard_groups'][$y]['dashboard_group_uuid'] = '6fb4d5c8-c95d-400f-b96c-edc044571a92';
 $array['dashboard'][$x]['dashboard_groups'][$y]['dashboard_uuid'] = '7ce1d732-06b4-4834-ac8f-c18d8fab81e0';
 $array['dashboard'][$x]['dashboard_groups'][$y]['group_name'] = 'superadmin';
-
-?>

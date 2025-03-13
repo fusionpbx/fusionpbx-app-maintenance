@@ -317,5 +317,3 @@ echo "</div>";
 
 //include the footer
 require_once dirname(__DIR__, 2) . '/resources/footer.php';
-
-?>

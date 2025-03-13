@@ -61,7 +61,7 @@ $order_by = $_GET["order_by"] ?? '';
 $order = $_GET["order"] ?? '';
 
 //set from session variables
-$list_row_edit_button = !empty($_SESSION['theme']['list_row_edit_button']['boolean']) ? $_SESSION['theme']['list_row_edit_button']['boolean'] : 'false';
+$list_row_edit_button = filter_var($_SESSION['theme']['list_row_edit_button']['boolean'] ?? false, FILTER_VALIDATE_BOOL);
 
 //process the http post data by action
 if (!empty($action) && count($maintenance_logs_js) > 0) {
@@ -260,7 +260,7 @@ echo th_order_by('server_timestamp', $text['label-server_timestamp'], $order_by,
 echo th_order_by('status', $text['label-status'], $order_by, $order);
 echo th_order_by('message', $text['label-message'], $order_by, $order);
 //echo "<th class='left hide-md-dn'>".$text['label-message']."</th>\n";
-if (permission_exists('maintenance_log_edit') && $list_row_edit_button == 'true') {
+if (permission_exists('maintenance_log_edit') && $list_row_edit_button) {
 	echo "			<td class='action-button'>&nbsp;</td>\n";
 }
 echo "			</tr>\n";
@@ -289,7 +289,7 @@ if (is_array($maintenance_logs) && @sizeof($maintenance_logs) != 0) {
 		echo "	<td class='left'>".escape($row['maintenance_log_epoch'])."</td>\n";
 		echo "	<td class='left'>".escape($row['maintenance_log_status'])."</td>\n";
 		echo "	<td class='left hide-sm-dn'>".escape($row['maintenance_log_message'])."</td>\n";
-		if (permission_exists('maintenance_log_edit') && $list_row_edit_button == 'true') {
+		if (permission_exists('maintenance_log_edit') && $list_row_edit_button) {
 			echo "<td class='action-button'>\n";
 			echo button::create(['type'=>'button','title'=>$text['button-edit'],'icon'=>$_SESSION['theme']['button_icon_edit'],'link'=>$list_row_url]);
 			echo "</td>\n";
@@ -309,5 +309,3 @@ echo "</form>\n";
 
 //include the footer
 require_once "resources/footer.php";
-
-?>

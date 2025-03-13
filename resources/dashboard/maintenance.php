@@ -301,6 +301,9 @@ if (permission_exists('maintenance_view')) {
 				} else {
 					$database_checkbox_state = CHECKBOX_CHECKED;
 				}
+			} else {
+				$database_setting_uuid = '';
+				$database_setting_table = '';
 			}
 
 			//check for filesystem status
@@ -457,5 +460,3 @@ if (permission_exists('maintenance_view')) {
 	echo "	<span class='hud_expander' onclick=\"$('#hud_maintenance_details').slideToggle('fast'); toggle_grid_row_end('Maintenance')\"><span class='fas fa-ellipsis-h'></span></span>";
 	echo "</div>";
 }
-
-?>

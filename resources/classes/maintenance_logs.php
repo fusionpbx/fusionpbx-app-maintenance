@@ -278,5 +278,3 @@ class maintenance_logs implements database_maintenance {
 		return "database_retention_days";
 	}
 }
-
-?>
