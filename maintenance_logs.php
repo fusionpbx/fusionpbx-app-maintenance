@@ -47,7 +47,7 @@ $text = $language->get();
 //database and settings for users preferences
 $domain_uuid = $_SESSION['domain_uuid'] ?? '';
 $user_uuid = $_SESSION['user_uuid'] ?? '';
-$database = new database;
+$database = database::new();
 $setting = new settings(['database' => $database, 'domain_uuid' => $domain_uuid, 'user_uuid' => $user_uuid]);
 
 //set request variables
@@ -61,7 +61,7 @@ $order_by = $_GET["order_by"] ?? '';
 $order = $_GET["order"] ?? '';
 
 //set from session variables
-$list_row_edit_button = filter_var($_SESSION['theme']['list_row_edit_button']['boolean'] ?? false, FILTER_VALIDATE_BOOL);
+$list_row_edit_button = $settings->get('theme', 'list_row_edit_button', false);
 
 //process the http post data by action
 if (!empty($action) && count($maintenance_logs_js) > 0) {
@@ -91,12 +91,7 @@ if (!empty($action) && count($maintenance_logs_js) > 0) {
 }
 
 //set the time zone
-if (isset($_SESSION['domain']['time_zone']['name'])) {
-	$time_zone = $_SESSION['domain']['time_zone']['name'];
-}
-else {
-	$time_zone = date_default_timezone_get();
-}
+$time_zone = $settings->get('domain', 'time_zone', date_default_timezone_get());
 
 //add the search string
 if (isset($_GET["search"]) && $_GET["search"] != '') {
@@ -141,7 +136,7 @@ if (count($parameters) > 0) {
 }
 
 //prepare to page the results
-$rows_per_page = (!empty($_SESSION['domain']['paging']['numeric'])) ? $_SESSION['domain']['paging']['numeric'] : 50;
+$rows_per_page = $settings->get('domain', 'paging', 50);
 $param = $search ? "&search=".$search : null;
 $page = isset($_GET['page']) ? $_GET['page'] : 0;
 list($paging_controls, $rows_per_page) = paging($num_rows, $param, $rows_per_page);
@@ -266,7 +261,7 @@ if (permission_exists('maintenance_log_edit') && $list_row_edit_button) {
 echo "			</tr>\n";
 
 //data rows
-if (is_array($maintenance_logs) && @sizeof($maintenance_logs) != 0) {
+if (!empty($maintenance_logs)) {
 	$domains = maintenance_service::get_domains($database);
 	$x = 0;
 	foreach ($maintenance_logs as $row) {
