@@ -44,11 +44,17 @@ else {
 $language = new text;
 $text = $language->get();
 
-//database and settings for users preferences
+//set the session variables as local variables
 $domain_uuid = $_SESSION['domain_uuid'] ?? '';
 $user_uuid = $_SESSION['user_uuid'] ?? '';
+
+//create the database object
 $database = database::new();
-$setting = new settings(['database' => $database, 'domain_uuid' => $domain_uuid, 'user_uuid' => $user_uuid]);
+
+//create the settings object
+if (!$settings) {
+	$settings = new settings(['database' => $database, 'domain_uuid' => $domain_uuid]);
+}
 
 //set request variables
 $search = $_REQUEST["search"] ?? '';
