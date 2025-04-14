@@ -53,7 +53,7 @@ $database = database::new();
 
 //create the settings object
 if (!$settings) {
-	$settings = new settings(['database' => $database, 'domain_uuid' => $domain_uuid]);
+	$settings = new settings(['database' => $database, 'domain_uuid' => $domain_uuid, 'user_uuid' => $user_uuid]);
 }
 
 //set request variables
