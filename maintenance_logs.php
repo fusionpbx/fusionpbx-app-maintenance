@@ -40,7 +40,7 @@ else {
 	exit;
 }
 
-//add multi-lingual support
+//add multilingual support
 $language = new text;
 $text = $language->get();
 
