@@ -46,6 +46,7 @@ class maintenance {
 	const FILESYSTEM_SUBCATEGORY = 'filesystem_retention_days';
 
 	private static $app_config_list = null;
+	static $classes = [];
 
 	/**
 	 * Returns an array of domain names with their domain UUID as the array key
@@ -362,30 +363,115 @@ class maintenance {
 	 * @return array Names of classes or empty array if none found
 	 */
 	public static function find_classes_by_method(string $method_name): array {
-		//set defaults
 		$found_classes = [];
-		$project_root = dirname(__DIR__, 4);
-
-		//get the autoloader
-		if (!class_exists('auto_loader')) {
-			require_once $project_root . '/resources/classes/auto_loader.php';
-			new auto_loader();
-		}
-
-		//get all php files
-		$files = glob($project_root . '/*/*/resources/classes/*.php');
+		$class_files = self::get_classes();
 
 		//iterate over the files
-		foreach ($files as $file) {
-			include_once $file;
-			$class = basename($file, '.php');
-
-			//check for the existence of the method
-			if (method_exists($class, $method_name)) {
+		foreach ($class_files as $file) {
+			$contents = file_get_contents($file);
+			if (str_contains($contents, 'public static function ' . $method_name . '(settings $settings): void {')) {
+				$class = basename($file, '.php');
 				$found_classes[$class] = $file;
 			}
 		}
 		return $found_classes;
+	}
+
+	private static function get_classes() {
+		//set project path using magic dir constant
+		$project_path = dirname(__DIR__, 4);
+
+		//build the array of all locations for classes in specific order
+		$search_path = [
+			$project_path . '/resources/interfaces/*.php',
+			$project_path . '/resources/traits/*.php',
+			$project_path . '/resources/classes/*.php',
+			$project_path . '/*/*/resources/interfaces/*.php',
+			$project_path . '/*/*/resources/traits/*.php',
+			$project_path . '/*/*/resources/classes/*.php',
+			$project_path . '/core/authentication/resources/classes/plugins/*.php',
+		];
+
+		//get all php files for each path
+		$files = [];
+		foreach ($search_path as $path) {
+			$files = array_merge($files, glob($path));
+		}
+
+		//reset the current array
+		$class_list = [];
+
+		//interfaces are ignored
+		$interface_list = [];
+
+		//store the class name (key) and the path (value)
+		foreach ($files as $file) {
+			$file_content = file_get_contents($file);
+
+			// Remove block comments
+			$file_content = preg_replace('/\/\*.*?\*\//s', '', $file_content);
+			// Remove single-line comments
+			$file_content = preg_replace('/(\/\/|#).*$/m', '', $file_content);
+
+			// Detect the namespace
+			$namespace = '';
+			if (preg_match('/\bnamespace\s+([^;{]+)[;{]/', $file_content, $namespace_match)) {
+				$namespace = trim($namespace_match[1]) . '\\';
+			}
+
+			// Regex to capture class, interface, or trait declarations
+			// It optionally captures an "implements" clause
+			// Note: This regex is a simplified version and may need adjustments for edge cases
+			$pattern = '/\b(class|interface|trait)\s+(\w+)(?:\s+extends\s+\w+)?(?:\s+implements\s+([^\\{]+))?/';
+
+			if (preg_match_all($pattern, $file_content, $matches, PREG_SET_ORDER)) {
+				foreach ($matches as $match) {
+
+					// "class", "interface", or "trait"
+					$type = $match[1];
+
+					// The class/interface/trait name
+					$name = trim($match[2], " \n\r\t\v\x00\\");
+
+					// Combine the namespace and name
+					$full_name = $namespace . $name;
+
+					// Store the class/interface/trait with its file overwriting any existing declaration.
+					$class_list[$full_name] = $file;
+
+					// If it's a class that implements interfaces, process the implements clause.
+					if ($type === 'class' && isset($match[3]) && trim($match[3]) !== '') {
+						// Split the interface list by commas.
+						$interface_list = explode(',', $match[3]);
+						foreach ($interface_list as $interface) {
+							$interface_name = trim($interface, " \n\r\t\v\x00\\");
+							// Check that it is declared as an array so we can record the classes
+							if (empty($interface_list[$interface_name]))
+								$interface_list[$interface_name] = [];
+							// Record the classes that implement interface sorting by namspace and class name
+							$interface_list[$interface_name][] = $full_name;
+						}
+					}
+				}
+			} else {
+
+				//
+				// When the file is in the classes|interfaces|traits folder then
+				// we must assume it is a valid class as IonCube will encode the
+				// class name. So, we use the file name as the class name in the
+				// global  namespace and  set it,  checking first  to ensure the
+				// basename does not  override an already declared class file in
+				// order to mimic previous behaviour.
+				//
+
+				// use the basename as the class name
+				$class_name = basename($file, '.php');
+				if (!isset($class_list[$class_name])) {
+					$class_list[$class_name] = $file;
+				}
+			}
+		}
+		return $class_list;
 	}
 
 	private static function load_app_config_list() {

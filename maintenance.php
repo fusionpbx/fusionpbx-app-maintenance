@@ -44,6 +44,10 @@ if (!empty($_REQUEST['search'])) {
 	$search = '';
 }
 
+//set the domain and user
+$domain_uuid = $_SESSION['domain_uuid'] ?? '';
+$user_uuid = $_SESSION['user_uuid'] ?? '';
+
 //internationalization
 $language = new text;
 $text = $language->get();
@@ -80,11 +84,7 @@ if (!empty($_REQUEST['action'])) {
 }
 
 //create a boolean value to represent if show_all is enabled
-if (!empty($_REQUEST['show'])) {
-	$show_all = ($_REQUEST['show'] == 'all' && permission_exists('maintenance_show_all')) ? true : false;
-} else {
-	$show_all = false;
-}
+	$show_all = !empty($_REQUEST['show']) && $_REQUEST['show'] === 'all' && permission_exists('maintenance_show_all');
 
 //order by
 if (!empty($_REQUEST['order_by'])) {
@@ -102,7 +102,7 @@ if (!empty($_REQUEST['page'])) {
 	$page = '';
 }
 
-//load the settings
+//load the global settings only
 $default_settings = new settings(['database' => $database]);
 
 //get the list in the default settings
@@ -171,7 +171,7 @@ ksort($maintenance_apps);
 $url_params = '';
 
 if ($show_all) {
-	$url_params = (empty($url_params) ? '?' : '&') . 'show=all';
+	$url_params = '?show=all';
 }
 if (!empty($page)) {
 	$url_params .= (empty($url_params) ? '?' : '&') . 'page=' . $page;
@@ -238,7 +238,7 @@ echo "				</tr>";
 
 //list all maintenance applications from the defaults settings for global and each domain and show if they are enabled or disabled
 foreach ($maintenance_apps as $class => $app_settings) {
-	//make the class name more user friendly
+	//make the class name more user-friendly
 	if ($class === 'cdr') {
 	    $display_name = strtoupper(str_replace('_', ' ', $class));
 	} else {

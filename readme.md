@@ -3,10 +3,10 @@
 ## Why Use Maintenance Tasks?
 This application fully integrates in to the Dashboard to show enabled / disabled maintenance applications at a glance on the current domain.
 - Automatic detection and installation of new maintenance services when **App Defaults** is executed.
-- Each application can execute on a per domain basis making it possible for a per tenant limit
+- Each application can execute on a per-domain basis making it possible for a per-tenant limit
 - Simple function call for each class enabling a complete customization for the maintenance application. This opens a new host of capabilities like filesystem quotas or archiving old database records.
 - Built-in logging is available via the *maintenance_service::log_write()* method and viewable in the new **Maintenance Logs** viewer (see screenshots).
-- Default setings are done automatically per maintenance application when registered. Each application can set the number of days to retain data both globally and per domain under the **Maintenance** category.
+- Default settings are done automatically per maintenance application when registered. Each application can set the number of days to retain data both globally and per domain under the **Maintenance** category.
 
 ## New Service Class
 Utilizes the new service class to allow for easy installation and a standardize comprehensive command line interpreter. With the ability to reload the maintenance service settings without a restart of the service.

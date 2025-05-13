@@ -33,7 +33,7 @@
 	$apps[$x]['subcategory'] = "";
 	$apps[$x]['version'] = "1.0";
 	$apps[$x]['license'] = "Mozilla Public License 1.1";
-	$apps[$x]['url'] = "http://www.fusionpbx.com";
+	$apps[$x]['url'] = "https://www.fusionpbx.com";
 	$apps[$x]['description']['en-us'] = "Performs maintenance work on database and filesystem";
 	$apps[$x]['description']['en-gb'] = "Performs maintenance work on database and filesystem";
 	$apps[$x]['description']['ar-eg'] = "يقوم بأعمال الصيانة على قاعدة البيانات ونظام الملفات";
