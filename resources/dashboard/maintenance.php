@@ -353,17 +353,16 @@ if (permission_exists('maintenance_view')) {
 		echo "	<td valign='top' class='".$row_style[$c]." hud_text input tr_link_void' style='width: 1%; text-align: center;'>";
 		if (permission_exists('maintenance_edit')) {
 			if ($database_checkbox_state !== CHECKBOX_HIDDEN) {
-				//enable or disable checkbox
-				if (substr($setting->get('theme','input_toggle_style', ''), 0, 6) == 'switch') {
-					echo "<label class='switch'>";
-					echo "	<input type='checkbox' name='database_retention_days[$x][status]' value='true' $database_checked onclick=\"this.checked ? show_input_box('database_days_$x') : hide_input_box('database_days_$x');\">";
-					echo "	<span class='slider'></span>";
-					echo "</label>";
-				} else {
-					echo "<select class='formfld' name='database_retention_days[$x][status]'>";
-					echo "	<option value='true' ".($database_checkbox_state === CHECKBOX_CHECKED ? "selected='selected'" : null)." onclick=\"this.selected ? show_input_box('database_days_$x') : null;\">".$text['label-enabled']."</option>";
-					echo "	<option value='false' ".($database_checkbox_state === CHECKBOX_UNCHECKED ? "selected='selected'" : null)." onclick=\"this.selected ? hide_input_box('database_days_$x') : null;\">".$text['label-disabled']."</option>";
-					echo "</select>";
+				if ($input_toggle_style_switch) {
+					echo "	<span class='switch'>\n";
+				}
+				echo "<select class='formfld' name='database_retention_days[$x][status]'>";
+				echo "	<option value='true' ".($database_checkbox_state === CHECKBOX_CHECKED ? "selected='selected'" : null)." onclick=\"this.selected ? show_input_box('database_days_$x') : null;\">".$text['label-enabled']."</option>";
+				echo "	<option value='false' ".($database_checkbox_state === CHECKBOX_UNCHECKED ? "selected='selected'" : null)." onclick=\"this.selected ? hide_input_box('database_days_$x') : null;\">".$text['label-disabled']."</option>";
+				echo "</select>";
+				if ($input_toggle_style_switch) {
+					echo "		<span class='slider'></span>\n";
+					echo "	</span>\n";
 				}
 			} else {
 				//not a database maintenance application
@@ -410,16 +409,16 @@ if (permission_exists('maintenance_view')) {
 		echo "	<td valign='top' class='".$row_style[$c]." hud_text input tr_link_void' style='width: 1%; text-align: center;'>";
 		if (permission_exists('maintenance_edit')) {
 			if ($filesystem_checkbox_state !== CHECKBOX_HIDDEN) {
-				if (substr($setting->get('theme','input_toggle_style', ''), 0, 6) == 'switch') {
-					echo "<label class='switch'>";
-					echo "	<input type='checkbox' locked id='filesystem_enabled_$x' name='filesystem_retention_days[$x][status]' value='true' $filesystem_checked onclick=\"this.checked ? show_input_box('filesystem_days_$x') : hide_input_box('filesystem_days_$x');\">";
-					echo "	<span class='slider'></span>";
-					echo "</label>";
-				} else {
-					echo "<select class='formfld' id='filesystem_enabled_$x' name='filesystem_retention_days[$x][status]'>";
-					echo "	<option value='true' ".($filesystem_checkbox_state === CHECKBOX_CHECKED ? "selected='selected'" : null)." onclick=\"this.selected ? show_input_box('filesystem_days_$x') : null;\">".$text['label-enabled']."</option>";
-					echo "	<option value='false' ".($filesystem_checkbox_state === CHECKBOX_UNCHECKED ? "selected='selected'" : null)." onclick=\"this.selected ? hide_input_box('filesystem_days_$x') : null;\">".$text['label-disabled']."</option>";
-					echo "</select>";
+				if ($input_toggle_style_switch) {
+					echo "	<span class='switch'>\n";
+				}
+				echo "<select class='formfld' id='filesystem_enabled_$x' name='filesystem_retention_days[$x][status]'>";
+				echo "	<option value='true' ".($filesystem_checkbox_state === CHECKBOX_CHECKED ? "selected='selected'" : null)." onclick=\"this.selected ? show_input_box('filesystem_days_$x') : null;\">".$text['label-enabled']."</option>";
+				echo "	<option value='false' ".($filesystem_checkbox_state === CHECKBOX_UNCHECKED ? "selected='selected'" : null)." onclick=\"this.selected ? hide_input_box('filesystem_days_$x') : null;\">".$text['label-disabled']."</option>";
+				echo "</select>";
+				if ($input_toggle_style_switch) {
+					echo "		<span class='slider'></span>\n";
+					echo "	</span>\n";
 				}
 			} else {
 				echo "&nbsp;";
