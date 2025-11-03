@@ -18,7 +18,7 @@
  *
  * The Initial Developer of the Original Code is
  * Mark J Crane <markjcrane@fusionpbx.com>
- * Portions created by the Initial Developer are Copyright (C) 2008-2024
+ * Portions created by the Initial Developer are Copyright (C) 2008-2025
  * the Initial Developer. All Rights Reserved.
  *
  * Contributor(s):
@@ -197,7 +197,7 @@ if (permission_exists('maintenance_view')) {
 	echo "	<div class='hud_content' onclick=\"$('#hud_maintenance_details').slideToggle('fast'); toggle_grid_row_end('Maintenance')\">";
 	echo "		<span class='hud_title'><a onclick=\"document.location.href='/app/maintenance/maintenance.php'\">".$text['label-maintenance']."</a></span>";
 	echo "		<script src='/app/maintenance/resources/javascript/maintenance_functions.js'></script>";
-	if ($dashboard_chart_type === 'doughnut') {
+	if ($widget_chart_type === 'doughnut') {
 		//add an event listener for showing and hiding the days input box
 		echo "	<div class='hud_chart' style='width: 250px;'><canvas id='maintenance_chart'></canvas></div>";
 		echo "	<script>\n";
@@ -229,7 +229,7 @@ if (permission_exists('maintenance_view')) {
 		echo "							labels: {\n";
 		echo "								usePointStyle: true,\n";
 		echo "								pointStyle: 'rect',\n";
-		echo "								color: '".$dashboard_label_text_color."'\n";
+		echo "								color: '".$widget_label_text_color."'\n";
 		echo "							}\n";
 		echo "						},\n";
 		echo "					}\n";
@@ -241,7 +241,7 @@ if (permission_exists('maintenance_view')) {
 		echo "						ctx.font = chart_text_size + ' ' + chart_text_font;\n";
 		echo "						ctx.textBaseline = 'middle';\n";
 		echo "						ctx.textAlign = 'center';\n";
-		echo "						ctx.fillStyle = '".$dashboard_number_text_color."';\n";
+		echo "						ctx.fillStyle = '".$widget_number_text_color."';\n";
 		echo "						ctx.fillText(options.text, width / 2, top + (height / 2));\n";
 		echo "						ctx.save();\n";
 		echo "					}\n";
@@ -250,7 +250,7 @@ if (permission_exists('maintenance_view')) {
 		echo "		);\n";
 		echo "	</script>\n";
 	}
-	if ($dashboard_chart_type === 'number') {
+	if ($widget_chart_type === 'number') {
 		echo "	<span class='hud_stat'>$total_running_maintenance_apps / $total_maintenance_apps</span>";
 	}
 	echo "	</div>";
