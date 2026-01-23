@@ -107,7 +107,8 @@ class maintenance {
 		$registered_apps = self::get_registered_applications($database);
 
 		//load the text for the description
-		$text = (new text())->get(null, 'app/' . __CLASS__);
+		$language = new text();
+		$text = $language->get(null, 'app/' . __CLASS__);
 
 		//register each app
 		$new_maintenance_apps = [];
