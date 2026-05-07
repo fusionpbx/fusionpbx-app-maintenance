@@ -153,7 +153,7 @@ class maintenance_service extends service {
 	 * @access protected
 	 */
 	#[\Override]
-	protected function reload_settings(): void {
+	public function reload_settings(): void {
 		//reload the config file
 		self::$config->read();
 
