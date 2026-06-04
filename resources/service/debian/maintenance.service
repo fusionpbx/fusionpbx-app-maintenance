@@ -1,6 +1,6 @@
 ; Original Author: Mark J Crane <markjcrane@fusionpbx.com>
 ; Modified By: Tim Fry <tim@fusionpbx.com>
-; cp /var/www/fusionpbx/app/maintenance/resources/service/debian.service /etc/systemd/system/maintenance.service
+; cp /var/www/fusionpbx/app/maintenance/resources/service/debian/maintenance.service /etc/systemd/system/maintenance.service
 ; systemctl daemon-reload
 ; systemctl enable maintenance
 ; systemctl start maintenance
