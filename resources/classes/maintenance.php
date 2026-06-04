@@ -87,6 +87,27 @@ class maintenance {
 		if (!empty($maintenance_apps)) {
 			self::register_applications($database, $maintenance_apps);
 		}
+
+		//remove the old service name
+		$sql = "select service_uuid, service_name, service_category, service_file, service_enabled ";
+		$sql .=	"from v_services ";
+		$sql .=	"where service_name = 'maintenance_service' ";
+		$row = $database->select($sql, null, 'row');
+		if (!empty($row)) {
+			//uninstall the maintenance_service
+			system("systemctl stop maintenance_service");
+			unlink("/etc/systemd/system/maintenance_service.service");
+			system("systemctl disable maintenance_service");
+			system("systemctl daemon-reload");
+
+			//delete the maintenance_service from the database
+			if (!file_exists('/etc/systemd/system/maintenance_service.service')) {
+				$sql = "delete from v_services ";
+				$sql .=	"where service_name = 'maintenance_service' ";
+				$database->execute($sql);
+				unset($sql);
+			}
+		}
 	}
 
 	/**
