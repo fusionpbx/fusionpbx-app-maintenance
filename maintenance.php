@@ -577,7 +577,6 @@ echo modal::create([
 	'actions'=> button::create([
 		'type'=>'button',
 		'label'=>$text['button-continue'],
-		'icon'=>'check',
 		'icon'=>$settings->get('theme', 'button_icon_delete'),
 		'id'=>'btn_delete',
 		'style'=>'float: right; margin-left: 15px;',
