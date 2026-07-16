@@ -56,7 +56,15 @@ $text = $language->get();
 //create a database object
 $database = database::new();
 
-function maintenance_setting_edit_url($table, $uuid) {
+/**
+ * Get the edit URL for a maintenance setting based on its table and UUID.
+ *
+ * @param string|null $table The table name ('default', 'domain', or 'user').
+ * @param string|null $uuid  The UUID of the setting.
+ *
+ * @return string The edit URL for the maintenance setting, or an empty string if invalid.
+ */
+function maintenance_setting_edit_url(?string $table, ?string $uuid): string {
 	if (empty($table) || empty($uuid)) {
 		return '';
 	}
@@ -72,7 +80,17 @@ function maintenance_setting_edit_url($table, $uuid) {
 	return '';
 }
 
-function maintenance_find_setting(database $database, string $category, string $subcategory, string $domain_uuid = '') {
+/**
+ * Find a maintenance setting in the database based on category, subcategory, and optional domain UUID.
+ *
+ * @param database $database    The database object.
+ * @param string   $category    The category of the maintenance setting.
+ * @param string   $subcategory The subcategory of the maintenance setting.
+ * @param string   $domain_uuid Optional domain UUID to filter by.
+ *
+ * @return array The matching maintenance setting, or an empty array if not found.
+ */
+function maintenance_find_setting(database $database, string $category, string $subcategory, string $domain_uuid = ''): array {
 	$matches = maintenance::find_all_uuids($database, $category, $subcategory);
 
 	foreach ($matches as $match) {
@@ -88,41 +106,57 @@ function maintenance_find_setting(database $database, string $category, string $
 	return [];
 }
 
-function maintenance_setting_value_link($value, $table, $uuid) {
-        if (empty($table) || empty($uuid)) {
-                return escape($value);
-        }
+/**
+ * Generate an HTML link for a maintenance setting value that allows inline editing.
+ *
+ * @param string      $value The current value of the setting.
+ * @param string|null $table The table name ('default', 'domain', or 'user').
+ * @param string|null $uuid  The UUID of the setting.
+ *
+ * @return string The HTML link for the maintenance setting value, or the escaped value if invalid.
+ */
+function maintenance_setting_value_link(string $value, ?string $table, ?string $uuid): string {
+	if (empty($table) || empty($uuid)) {
+			return escape($value);
+	}
 
-        $id = 'maintenance_setting_'.preg_replace('/[^a-zA-Z0-9_]/', '_', $uuid);
+	$id = 'maintenance_setting_'.preg_replace('/[^a-zA-Z0-9_]/', '_', $uuid);
 
-        $html = "<span id='".$id."_display'>";
-        $html .= "<a href='#' onclick=\"document.getElementById('".$id."_display').style.display='none'; document.getElementById('".$id."_edit').style.display='inline-block'; document.getElementById('".$id."_input').focus(); return false;\">";
-        $html .= escape($value);
-        $html .= "</a>";
-        $html .= "</span>";
+	$html = "<span id='".$id."_display'>";
+	$html .= "<a href='#' onclick=\"document.getElementById('".$id."_display').style.display='none'; document.getElementById('".$id."_edit').style.display='inline-block'; document.getElementById('".$id."_input').focus(); return false;\">";
+	$html .= escape($value);
+	$html .= "</a>";
+	$html .= "</span>";
 
-        $html .= "<span id='".$id."_edit' style='display:none; white-space: nowrap;'>";
-        $html .= "<input type='number' id='".$id."_input' class='formfld' style='width: 80px;' value='".escape($value)."' min='0'>";
-        $html .= button::create([
-            'type'=>'button',
-            'label'=>'Save',
-            'class'=>'btn',
-            'style'=>'margin-left: 4px;',
-            'onclick'=>"document.getElementById('setting_table').value='".escape($table)."'; document.getElementById('setting_uuid').value='".escape($uuid)."'; document.getElementById('setting_value').value=document.getElementById('".$id."_input').value; list_action_set('update_setting_value'); list_form_submit('form_list');"
-        ]);
-        $html .= button::create([
-            'type'=>'button',
-            'label'=>'Cancel',
-            'class'=>'btn',
-            'style'=>'margin-left: 4px;',
-            'onclick'=>"document.getElementById('".$id."_edit').style.display='none'; document.getElementById('".$id."_display').style.display='inline';"
-        ]);
-        $html .= "</span>";
+	$html .= "<span id='".$id."_edit' style='display:none; white-space: nowrap;'>";
+	$html .= "<input type='number' id='".$id."_input' class='formfld' style='width: 80px;' value='".escape($value)."' min='0'>";
+	$html .= button::create([
+		'type'=>'button',
+		'label'=>'Save',
+		'class'=>'btn',
+		'style'=>'margin-left: 4px;',
+		'onclick'=>"document.getElementById('setting_table').value='".escape($table)."'; document.getElementById('setting_uuid').value='".escape($uuid)."'; document.getElementById('setting_value').value=document.getElementById('".$id."_input').value; list_action_set('update_setting_value'); list_form_submit('form_list');"
+	]);
+	$html .= button::create([
+		'type'=>'button',
+		'label'=>'Cancel',
+		'class'=>'btn',
+		'style'=>'margin-left: 4px;',
+		'onclick'=>"document.getElementById('".$id."_edit').style.display='none'; document.getElementById('".$id."_display').style.display='inline';"
+	]);
+	$html .= "</span>";
 
-        return $html;
+	return $html;
 }
 
-function maintenance_setting_prefix($table) {
+/**
+ * Get the prefix for a maintenance setting based on its table.
+ *
+ * @param string|null $table The table name ('default', 'domain', or 'user').
+ *
+ * @return string The prefix for the maintenance setting, or an empty string if invalid.
+ */
+function maintenance_setting_prefix(?string $table): string {
 	switch ($table) {
 		case 'default': return 'default_setting';
 		case 'domain': return 'domain_setting';
@@ -131,7 +165,14 @@ function maintenance_setting_prefix($table) {
 	}
 }
 
-function maintenance_setting_table_name($table) {
+/**
+ * Get the table name for a maintenance setting based on its table.
+ *
+ * @param string|null $table The table name ('default', 'domain', or 'user').
+ *
+ * @return string The table name for the maintenance setting, or an empty string if invalid.
+ */
+function maintenance_setting_table_name(?string $table): string {
 	switch ($table) {
 		case 'default': return 'default_settings';
 		case 'domain': return 'domain_settings';
@@ -140,96 +181,130 @@ function maintenance_setting_table_name($table) {
 	}
 }
 
+/**
+ * Get the registered maintenance application class name based on the provided application name.
+ *
+ * @param database $database    The database object.
+ * @param string   $application The application name to look for.
+ *
+ * @return string The registered maintenance application class name, or the original application name if not found.
+ */
 function maintenance_log_application(database $database, string $application): string {
-        $settings = new settings(['database' => $database]);
-        $apps = $settings->get('maintenance', 'application', []);
+	$settings = new settings(['database' => $database]);
+	$apps = $settings->get('maintenance', 'application', []);
 
-        foreach ($apps as $class) {
-            if (!class_exists($class)) {
-                    continue;
-            }
+	foreach ($apps as $class) {
+		if (!class_exists($class)) {
+				continue;
+		}
 
-            if ($class === $application) {
-                    return $class;
-            }
+		if ($class === $application) {
+				return $class;
+		}
 
-            if (method_exists($class, 'database_maintenance_category') && $class::database_maintenance_category() === $application) {
-                    return $class;
-            }
+		if (method_exists($class, 'database_maintenance_category') && $class::database_maintenance_category() === $application) {
+				return $class;
+		}
 
-            if (method_exists($class, 'filesystem_maintenance_category') && $class::filesystem_maintenance_category() === $application) {
-                    return $class;
-            }
-        }
+		if (method_exists($class, 'filesystem_maintenance_category') && $class::filesystem_maintenance_category() === $application) {
+				return $class;
+		}
+	}
 
-        return $application;
+	return $application;
 }
 
+/**
+ * Get the last run date and time for a maintenance application, optionally filtered by domain UUID.
+ *
+ * @param database $database    The database object.
+ * @param string   $application The application name to look for.
+ * @param string   $domain_uuid Optional domain UUID to filter by.
+ *
+ * @return string The last run date and time in 'Y-m-d H:i' format, or an empty string if not found.
+ */
 function maintenance_last_run(database $database, string $application, string $domain_uuid = '') {
-        $application = maintenance_log_application($database, $application);
+	$application = maintenance_log_application($database, $application);
 
-        $sql = "select max(insert_date) from v_maintenance_logs ";
-        $sql .= "where maintenance_log_application = :application ";
-        $parameters['application'] = $application;
+	$sql = "select max(insert_date) from v_maintenance_logs ";
+	$sql .= "where maintenance_log_application = :application ";
+	$parameters['application'] = $application;
 
-        if (!empty($domain_uuid) && is_uuid($domain_uuid)) {
-            $sql .= "and domain_uuid = :domain_uuid ";
-            $parameters['domain_uuid'] = $domain_uuid;
-        }
+	if (!empty($domain_uuid) && is_uuid($domain_uuid)) {
+		$sql .= "and domain_uuid = :domain_uuid ";
+		$parameters['domain_uuid'] = $domain_uuid;
+	}
 
-        $last_run = $database->select($sql, $parameters, 'column');
+	$last_run = $database->select($sql, $parameters, 'column');
 
-        // Some maintenance tasks log globally with domain_uuid NULL.
-        // If no domain-specific run exists, fall back to the global application run.
-        if (empty($last_run) && !empty($domain_uuid) && is_uuid($domain_uuid)) {
-                $sql = "select max(insert_date) from v_maintenance_logs ";
-                $sql .= "where maintenance_log_application = :application ";
-                $sql .= "and domain_uuid is null ";
-                $parameters = ['application' => $application];
-                $last_run = $database->select($sql, $parameters, 'column');
-        }
+	// Some maintenance tasks log globally with domain_uuid NULL.
+	// If no domain-specific run exists, fall back to the global application run.
+	if (empty($last_run) && !empty($domain_uuid) && is_uuid($domain_uuid)) {
+			$sql = "select max(insert_date) from v_maintenance_logs ";
+			$sql .= "where maintenance_log_application = :application ";
+			$sql .= "and domain_uuid is null ";
+			$parameters = ['application' => $application];
+			$last_run = $database->select($sql, $parameters, 'column');
+	}
 
-        if (empty($last_run)) {
-                return '';
-        }
+	if (empty($last_run)) {
+			return '';
+	}
 
-        $date = new DateTime($last_run);
-        $date->setTimezone(new DateTimeZone(date_default_timezone_get()));
-        return $date->format('Y-m-d H:i');
+	$date = new DateTime($last_run);
+	$date->setTimezone(new DateTimeZone(date_default_timezone_get()));
+	return $date->format('Y-m-d H:i');
 }
 
+/**
+ * Calculate the next scheduled run time for maintenance based on settings.
+ *
+ * @param settings $settings The settings object containing maintenance configuration.
+ *
+ * @return string The next scheduled run time in 'Y-m-d H:i' format, or an empty string if maintenance is disabled or time of day is not set.
+ */
 function maintenance_next_run(settings $settings) {
-        $enabled = $settings->get('maintenance', 'enabled', false);
-        $time_of_day = $settings->get('maintenance', 'time_of_day', '');
+	$enabled = $settings->get('maintenance', 'enabled', false);
+	$time_of_day = $settings->get('maintenance', 'time_of_day', '');
 
-        if (!$enabled || empty($time_of_day)) {
-                return '';
-        }
+	if (!$enabled || empty($time_of_day)) {
+			return '';
+	}
 
-        $now = new DateTime();
-        $next = new DateTime(date('Y-m-d').' '.$time_of_day);
+	$now = new DateTime();
+	$next = new DateTime(date('Y-m-d').' '.$time_of_day);
 
-        if ($next <= $now) {
-                $next->modify('+1 day');
-        }
+	if ($next <= $now) {
+			$next->modify('+1 day');
+	}
 
-        return $next->format('Y-m-d H:i');
+	return $next->format('Y-m-d H:i');
 }
 
-function maintenance_setting_enabled_inline($enabled, $table, $uuid, $text) {
-        $label = $enabled ? 'true' : 'false';
+/**
+ * Generate an HTML link for a maintenance setting that allows inline editing of the enabled state.
+ *
+ * @param bool        $enabled The current enabled state of the setting.
+ * @param string|null $table   The table name ('default', 'domain', or 'user').
+ * @param string|null $uuid    The UUID of the setting.
+ * @param string|null $text    The display text for the setting.
+ *
+ * @return string The HTML link for the maintenance setting, or the escaped label if invalid.
+ */
+function maintenance_setting_enabled_inline($enabled, ?string $table = null, ?string $uuid = null, ?string $text = null) {
+	$label = $enabled ? 'true' : 'false';
 
-        if (empty($table) || empty($uuid)) {
-                return escape($label);
-        }
+	if (empty($table) || empty($uuid)) {
+			return escape($label);
+	}
 
-        return button::create([
-            'type'=>'submit',
-            'class'=>'link',
-            'label'=>escape($label),
-            'title'=>'Toggle enabled',
-            'onclick'=>"document.getElementById('setting_table').value='".escape($table)."'; document.getElementById('setting_uuid').value='".escape($uuid)."'; list_action_set('toggle_setting_enabled'); list_form_submit('form_list')"
-    	]);
+	return button::create([
+		'type'=>'submit',
+		'class'=>'link',
+		'label'=>escape($label),
+		'title'=>'Toggle enabled',
+		'onclick'=>"document.getElementById('setting_table').value='".escape($table)."'; document.getElementById('setting_uuid').value='".escape($uuid)."'; list_action_set('toggle_setting_enabled'); list_form_submit('form_list')"
+	]);
 }
 
 
@@ -245,27 +320,29 @@ if (!empty($_REQUEST['action'])) {
 	}
 	$action = $_REQUEST['action'];
 
+	//run a maintenance application now
+	if ($action === 'run_now' && permission_exists('maintenance_edit')) {
+			$run_class = $_REQUEST['maintenance_class'] ?? '';
+			$default_settings_run = new settings(['database' => $database]);
+			$registered_classes = $default_settings_run->get('maintenance', 'application', []);
 
-        if ($action === 'run_now' && permission_exists('maintenance_edit')) {
-                $run_class = $_REQUEST['maintenance_class'] ?? '';
-                $default_settings_run = new settings(['database' => $database]);
-                $registered_classes = $default_settings_run->get('maintenance', 'application', []);
+			//run the maintenance application if it is registered and exists
+			if (!empty($run_class) && in_array($run_class, $registered_classes) && class_exists($run_class)) {
+					if (maintenance_service::run_application($database, $default_settings_run, $run_class)) {
+							message::add('Maintenance task ran: '.$run_class);
+					}
+					else {
+							message::add('Maintenance task failed: '.$run_class, 'negative');
+					}
+			}
+			else {
+					message::add('Invalid maintenance task', 'negative');
+			}
 
-                if (!empty($run_class) && in_array($run_class, $registered_classes) && class_exists($run_class)) {
-                        if (maintenance_service::run_application($database, $default_settings_run, $run_class)) {
-                                message::add('Maintenance task ran: '.$run_class);
-                        }
-                        else {
-                                message::add('Maintenance task failed: '.$run_class, 'negative');
-                        }
-                }
-                else {
-                        message::add('Invalid maintenance task', 'negative');
-                }
-
-                header('Location: maintenance.php');
-                exit;
-        }
+			// Redirect to the maintenance page and exit
+			header('Location: maintenance.php');
+			exit;
+	}
 
 	$checked_apps = $_REQUEST['maintenance_apps'] ?? [];
 	switch($action) {
@@ -282,50 +359,50 @@ if (!empty($_REQUEST['action'])) {
 			break;
 	}
 
-		if ($action === 'update_setting_value' && permission_exists('maintenance_edit')) {
-			$setting_table = $_REQUEST['setting_table'] ?? '';
-			$setting_uuid = $_REQUEST['setting_uuid'] ?? '';
-			$setting_value = $_REQUEST['setting_value'] ?? '';
-			$prefix = maintenance_setting_prefix($setting_table);
-			$table_name = maintenance_setting_table_name($setting_table);
+	if ($action === 'update_setting_value' && permission_exists('maintenance_edit')) {
+		$setting_table = $_REQUEST['setting_table'] ?? '';
+		$setting_uuid = $_REQUEST['setting_uuid'] ?? '';
+		$setting_value = $_REQUEST['setting_value'] ?? '';
+		$prefix = maintenance_setting_prefix($setting_table);
+		$table_name = maintenance_setting_table_name($setting_table);
 
-			if (!empty($prefix) && !empty($table_name) && is_uuid($setting_uuid) && is_numeric($setting_value)) {
-				$array[$table_name][0][$prefix.'_uuid'] = $setting_uuid;
-				$array[$table_name][0][$prefix.'_value'] = $setting_value;
-				$database->save($array);
-				message::add('Maintenance setting updated');
-			}
-			else {
-				message::add('Invalid maintenance setting value', 'negative');
-			}
-			header('Location: maintenance.php');
-			exit;
+		if (!empty($prefix) && !empty($table_name) && is_uuid($setting_uuid) && is_numeric($setting_value)) {
+			$array[$table_name][0][$prefix.'_uuid'] = $setting_uuid;
+			$array[$table_name][0][$prefix.'_value'] = $setting_value;
+			$database->save($array);
+			message::add('Maintenance setting updated');
 		}
-
-		if ($action === 'toggle_setting_enabled' && permission_exists('maintenance_edit')) {
-			$setting_table = $_REQUEST['setting_table'] ?? '';
-			$setting_uuid = $_REQUEST['setting_uuid'] ?? '';
-			$prefix = maintenance_setting_prefix($setting_table);
-			$table_name = maintenance_setting_table_name($setting_table);
-
-			if (!empty($prefix) && !empty($table_name) && is_uuid($setting_uuid)) {
-				$sql = "select ".$prefix."_enabled from v_".$table_name." where ".$prefix."_uuid = :setting_uuid";
-				$parameters['setting_uuid'] = $setting_uuid;
-				$current_enabled = $database->select($sql, $parameters, 'column');
-				unset($sql, $parameters);
-
-				$new_enabled = ($current_enabled == 'true' || $current_enabled === true || $current_enabled == '1') ? 'false' : 'true';
-				$array[$table_name][0][$prefix.'_uuid'] = $setting_uuid;
-				$array[$table_name][0][$prefix.'_enabled'] = $new_enabled;
-				$database->save($array);
-				message::add('Maintenance setting toggled');
-			}
-			else {
-				message::add('Invalid maintenance setting', 'negative');
-			}
-			header('Location: maintenance.php');
-			exit;
+		else {
+			message::add('Invalid maintenance setting value', 'negative');
 		}
+		header('Location: maintenance.php');
+		exit;
+	}
+
+	if ($action === 'toggle_setting_enabled' && permission_exists('maintenance_edit')) {
+		$setting_table = $_REQUEST['setting_table'] ?? '';
+		$setting_uuid = $_REQUEST['setting_uuid'] ?? '';
+		$prefix = maintenance_setting_prefix($setting_table);
+		$table_name = maintenance_setting_table_name($setting_table);
+
+		if (!empty($prefix) && !empty($table_name) && is_uuid($setting_uuid)) {
+			$sql = "select ".$prefix."_enabled from v_".$table_name." where ".$prefix."_uuid = :setting_uuid";
+			$parameters['setting_uuid'] = $setting_uuid;
+			$current_enabled = $database->select($sql, $parameters, 'column');
+			unset($sql, $parameters);
+
+			$new_enabled = ($current_enabled == 'true' || $current_enabled === true || $current_enabled == '1') ? 'false' : 'true';
+			$array[$table_name][0][$prefix.'_uuid'] = $setting_uuid;
+			$array[$table_name][0][$prefix.'_enabled'] = $new_enabled;
+			$database->save($array);
+			message::add('Maintenance setting toggled');
+		}
+		else {
+			message::add('Invalid maintenance setting', 'negative');
+		}
+		header('Location: maintenance.php');
+		exit;
+	}
 
 	$toggle_maintenance_apps = $_REQUEST['toggle'];
 	unset($token);
@@ -347,7 +424,8 @@ if (!empty($_REQUEST['page'])) {
 	$page = $_REQUEST['page'];
 	$offset = $rows_per_page * $page;
 } else {
-	$page = '';
+	$page = 0; // default to the first page if not specified
+	$offset = 0;
 }
 
 //load the global settings only
