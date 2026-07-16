@@ -287,11 +287,10 @@ function maintenance_next_run(settings $settings) {
  * @param bool        $enabled The current enabled state of the setting.
  * @param string|null $table   The table name ('default', 'domain', or 'user').
  * @param string|null $uuid    The UUID of the setting.
- * @param string|null $text    The display text for the setting.
  *
  * @return string The HTML link for the maintenance setting, or the escaped label if invalid.
  */
-function maintenance_setting_enabled_inline($enabled, ?string $table = null, ?string $uuid = null, ?string $text = null) {
+function maintenance_setting_enabled_inline($enabled, ?string $table = null, ?string $uuid = null) {
 	$label = $enabled ? 'true' : 'false';
 
 	if (empty($table) || empty($uuid)) {
@@ -664,7 +663,7 @@ foreach ($maintenance_apps as $class => $app_settings) {
 		if (isset($app_settings['database_maintenance']['global'])) {
 			$value = $app_settings['database_maintenance']['global']['default_setting_value'];
 			$uuid = $app_settings['database_maintenance']['global']['default_setting_uuid'] ?? '';
-			echo "<td>".maintenance_setting_enabled_inline(!empty($app_settings['database_maintenance']['global']['default_setting_enabled']), 'default', $uuid, $text)."</td>";
+			echo "<td>".maintenance_setting_enabled_inline(!empty($app_settings['database_maintenance']['global']['default_setting_enabled']), 'default', $uuid)."</td>";
 			echo "<td>".maintenance_setting_value_link($value, 'default', $uuid)."</td>";
 		} else {
 			echo "<td>&nbsp;</td>";
@@ -673,7 +672,7 @@ foreach ($maintenance_apps as $class => $app_settings) {
 		if (isset($app_settings['filesystem_maintenance']['global'])) {
 			$value = $app_settings['filesystem_maintenance']['global']['default_setting_value'];
 			$uuid = $app_settings['filesystem_maintenance']['global']['default_setting_uuid'] ?? '';
-			echo "<td>".maintenance_setting_enabled_inline(!empty($app_settings['filesystem_maintenance']['global']['default_setting_enabled']), 'default', $uuid, $text)."</td>";
+			echo "<td>".maintenance_setting_enabled_inline(!empty($app_settings['filesystem_maintenance']['global']['default_setting_enabled']), 'default', $uuid)."</td>";
 			echo "<td>".maintenance_setting_value_link($value, 'default', $uuid)."</td>";
 		} else {
 			echo "<td>&nbsp;</td>";
@@ -720,7 +719,7 @@ foreach ($maintenance_apps as $class => $app_settings) {
 				$table = isset($setting['domain_setting_value']) ? 'domain' : (isset($setting['default_setting_value']) ? 'default' : (isset($setting['user_setting_value']) ? 'user' : ''));
 				$value = $setting[$table.'_setting_value'] ?? '';
 				$uuid = $setting[$table.'_setting_uuid'] ?? '';
-				echo "<td>".maintenance_setting_enabled_inline(!empty($setting[$table.'_setting_enabled']), $table, $uuid, $text)."</td>";
+				echo "<td>".maintenance_setting_enabled_inline(!empty($setting[$table.'_setting_enabled']), $table, $uuid)."</td>";
 				echo "<td>".maintenance_setting_value_link($value, $table, $uuid)."</td>";
 			} else {
 				echo "<td>&nbsp;</td>";
@@ -731,7 +730,7 @@ foreach ($maintenance_apps as $class => $app_settings) {
 				$table = isset($setting['domain_setting_value']) ? 'domain' : (isset($setting['default_setting_value']) ? 'default' : (isset($setting['user_setting_value']) ? 'user' : ''));
 				$value = $setting[$table.'_setting_value'] ?? '';
 				$uuid = $setting[$table.'_setting_uuid'] ?? '';
-				echo "<td>".maintenance_setting_enabled_inline(!empty($setting[$table.'_setting_enabled']), $table, $uuid, $text)."</td>";
+				echo "<td>".maintenance_setting_enabled_inline(!empty($setting[$table.'_setting_enabled']), $table, $uuid)."</td>";
 				echo "<td>".maintenance_setting_value_link($value, $table, $uuid)."</td>";
 			} else {
 				echo "<td>&nbsp;</td>";
