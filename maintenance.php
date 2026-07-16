@@ -81,32 +81,6 @@ function maintenance_setting_edit_url(?string $table, ?string $uuid): string {
 }
 
 /**
- * Find a maintenance setting in the database based on category, subcategory, and optional domain UUID.
- *
- * @param database $database    The database object.
- * @param string   $category    The category of the maintenance setting.
- * @param string   $subcategory The subcategory of the maintenance setting.
- * @param string   $domain_uuid Optional domain UUID to filter by.
- *
- * @return array The matching maintenance setting, or an empty array if not found.
- */
-function maintenance_find_setting(database $database, string $category, string $subcategory, string $domain_uuid = ''): array {
-	$matches = maintenance::find_all_uuids($database, $category, $subcategory);
-
-	foreach ($matches as $match) {
-		if (($match['table'] ?? '') === 'domain' && !empty($domain_uuid) && ($match['domain_uuid'] ?? '') === $domain_uuid) {
-			return $match;
-		}
-	}
-	foreach ($matches as $match) {
-		if (($match['table'] ?? '') === 'default') {
-			return $match;
-		}
-	}
-	return [];
-}
-
-/**
  * Generate an HTML link for a maintenance setting value that allows inline editing.
  *
  * @param string      $value The current value of the setting.
@@ -476,7 +450,7 @@ else {
 		if (maintenance::has_database_maintenance($maintainer)) {
 			$category = maintenance::get_database_category($maintainer);
 			$subcategory = maintenance::get_database_subcategory($maintainer);
-			$match = maintenance_find_setting($database, $category, $subcategory, $domain_uuid);
+			$match = maintenance::find_setting($database, $category, $subcategory, $domain_uuid);
 
 			if (!empty($match)) {
 				$table = $match['table'] ?? 'default';
@@ -490,7 +464,7 @@ else {
 		if (maintenance::has_filesystem_maintenance($maintainer)) {
 			$category = maintenance::get_filesystem_category($maintainer);
 			$subcategory = maintenance::get_filesystem_subcategory($maintainer);
-			$match = maintenance_find_setting($database, $category, $subcategory, $domain_uuid);
+			$match = maintenance::find_setting($database, $category, $subcategory, $domain_uuid);
 
 			if (!empty($match)) {
 				$table = $match['table'] ?? 'default';

@@ -677,6 +677,32 @@ class maintenance {
 	}
 
 	/**
+	 * Find a maintenance setting in the database based on category, subcategory, and optional domain UUID.
+	 *
+	 * @param database $database    The database object.
+	 * @param string   $category    The category of the maintenance setting.
+	 * @param string   $subcategory The subcategory of the maintenance setting.
+	 * @param string   $domain_uuid Optional domain UUID to filter by.
+	 *
+	 * @return array The matching maintenance setting, or an empty array if not found.
+	 */
+	public static function find_setting(database $database, string $category, string $subcategory, string $domain_uuid = ''): array {
+		$matches = maintenance::find_all_uuids($database, $category, $subcategory);
+
+		foreach ($matches as $match) {
+			if (($match['table'] ?? '') === 'domain' && !empty($domain_uuid) && ($match['domain_uuid'] ?? '') === $domain_uuid) {
+				return $match;
+			}
+		}
+		foreach ($matches as $match) {
+			if (($match['table'] ?? '') === 'default') {
+				return $match;
+			}
+		}
+		return [];
+	}
+
+	/**
 	 * Called by the find_uuid function to actually search database using prepared data structures
 	 * @param database $database Database object
 	 * @param string $table Either 'default' or 'domain'
