@@ -245,33 +245,33 @@ class maintenance_service extends service {
 	 * Executes the maintenance for both database and filesystem objects using their respective helper methods
 	 * @access protected
 	 */
-        /**
-         * Executes one maintenance application and writes queued maintenance logs.
-         * @param database $database
-         * @param settings $settings
-         * @param string $app
-         * @return bool
-         */
-        public static function run_application(database $database, settings $settings, string $app): bool {
-            if (empty($app) || !class_exists($app)) {
-                    return false;
-            }
+		/**
+		 * Executes one maintenance application and writes queued maintenance logs.
+		 * @param database $database
+		 * @param settings $settings
+		 * @param string $app
+		 * @return bool
+		 */
+		public static function run_application(database $database, settings $settings, string $app): bool {
+			if (empty($app) || !class_exists($app)) {
+					return false;
+			}
 
-            self::$db = $database;
-            self::$logs = [];
+			self::$db = $database;
+			self::$logs = [];
 
-            if (method_exists($app, 'database_maintenance')) {
-                    $app::database_maintenance($settings);
-            }
-            if (method_exists($app, 'filesystem_maintenance')) {
-                    $app::filesystem_maintenance($settings);
-            }
+			if (method_exists($app, 'database_maintenance')) {
+					$app::database_maintenance($settings);
+			}
+			if (method_exists($app, 'filesystem_maintenance')) {
+					$app::filesystem_maintenance($settings);
+			}
 
-            self::log_flush();
-            self::$logs = null;
+			self::log_flush();
+			self::$logs = null;
 
-            return true;
-        }
+			return true;
+		}
 
 	protected function run_maintenance() {
 		//get the registered apps
@@ -286,7 +286,7 @@ class maintenance_service extends service {
 				$app::filesystem_maintenance($this->settings);
 			}
 		}
-		//write only once to database maintainance logs and flush the array
+		//write only once to database maintenance logs and flush the array
 		self::log_flush();
 	}
 
@@ -294,39 +294,36 @@ class maintenance_service extends service {
 	 * Write any pending transactions to the database
 	 * @access public
 	 */
-        public static function log_flush() {
-                //ensure the log_flush is not used to hijack the log_write function
-                if (self::$logs !== null && count(self::$logs) > 0) {
-                    foreach (self::$logs as $log_entry) {
-                        $sql = "insert into v_maintenance_logs ";
-                        $sql .= "(maintenance_log_uuid, domain_uuid, maintenance_log_application, maintenance_log_epoch, maintenance_log_message, maintenance_log_status, insert_date) ";
-                        $sql .= "values ";
-                        $sql .= "(:maintenance_log_uuid, :domain_uuid, :maintenance_log_application, :maintenance_log_epoch, :maintenance_log_message, :maintenance_log_status, now())";
+	public static function log_flush() {
+		//ensure the log_flush is not used to hijack the log_write function
+		if (self::$logs !== null && count(self::$logs) > 0) {
+			foreach (self::$logs as $log_entry) {
+				$sql = "insert into v_maintenance_logs ";
+				$sql .= "(maintenance_log_uuid, domain_uuid, maintenance_log_application, maintenance_log_epoch, maintenance_log_message, maintenance_log_status, insert_date) ";
+				$sql .= "values ";
+				$sql .= "(:maintenance_log_uuid, :domain_uuid, :maintenance_log_application, :maintenance_log_epoch, :maintenance_log_message, :maintenance_log_status, now())";
 
-                        $parameters = [
-                            'maintenance_log_uuid' => $log_entry['maintenance_log_uuid'],
-                            'domain_uuid' => $log_entry['domain_uuid'],
-                            'maintenance_log_application' => $log_entry['maintenance_log_application'],
-                            'maintenance_log_epoch' => $log_entry['maintenance_log_epoch'],
-                            'maintenance_log_message' => $log_entry['maintenance_log_message'],
-                            'maintenance_log_status' => $log_entry['maintenance_log_status'],
-                        ];
+				$parameters = [
+					'maintenance_log_uuid' => $log_entry['maintenance_log_uuid'],
+					'domain_uuid' => $log_entry['domain_uuid'],
+					'maintenance_log_application' => $log_entry['maintenance_log_application'],
+					'maintenance_log_epoch' => $log_entry['maintenance_log_epoch'],
+					'maintenance_log_message' => $log_entry['maintenance_log_message'],
+					'maintenance_log_status' => $log_entry['maintenance_log_status'],
+				];
 
-                        self::$db->execute($sql, $parameters);
+				self::$db->execute($sql, $parameters);
 
-                        $message = "domain=" . $log_entry['domain_uuid']
-                            . ", application=" . $log_entry['maintenance_log_application']
-                            . ", message=" . $log_entry['maintenance_log_message']
-                            . ", status=" . $log_entry['maintenance_log_status'];
-                        self::log($message);
-                    }
-                    //clear the log queue
-                    self::$logs = [];
-                }
-        }
-
-        ////////////////////////////////////////////////////
-	////////////////////////////////////////////////////
+				$message = "domain=" . $log_entry['domain_uuid']
+					. ", application=" . $log_entry['maintenance_log_application']
+					. ", message=" . $log_entry['maintenance_log_message']
+					. ", status=" . $log_entry['maintenance_log_status'];
+				self::log($message);
+			}
+			//clear the log queue
+			self::$logs = [];
+		}
+	}
 
 	/**
 	 * Saves the logs in an array in order to write them all at once. This is to remove the number of times the database will try to
