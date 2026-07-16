@@ -243,36 +243,36 @@ class maintenance_service extends service {
 
 	/**
 	 * Executes the maintenance for both database and filesystem objects using their respective helper methods
+	 * @param database $database
+	 * @param settings $settings
+	 * @param string $app
+	 * @return bool
 	 * @access protected
 	 */
-		/**
-		 * Executes one maintenance application and writes queued maintenance logs.
-		 * @param database $database
-		 * @param settings $settings
-		 * @param string $app
-		 * @return bool
-		 */
-		public static function run_application(database $database, settings $settings, string $app): bool {
-			if (empty($app) || !class_exists($app)) {
-					return false;
-			}
-
-			self::$db = $database;
-			self::$logs = [];
-
-			if (method_exists($app, 'database_maintenance')) {
-					$app::database_maintenance($settings);
-			}
-			if (method_exists($app, 'filesystem_maintenance')) {
-					$app::filesystem_maintenance($settings);
-			}
-
-			self::log_flush();
-			self::$logs = null;
-
-			return true;
+	public static function run_application(database $database, settings $settings, string $app): bool {
+		if (empty($app) || !class_exists($app)) {
+				return false;
 		}
 
+		self::$db = $database;
+		self::$logs = [];
+
+		if (method_exists($app, 'database_maintenance')) {
+				$app::database_maintenance($settings);
+		}
+		if (method_exists($app, 'filesystem_maintenance')) {
+				$app::filesystem_maintenance($settings);
+		}
+
+		self::log_flush();
+		self::$logs = null;
+
+		return true;
+	}
+
+	/**
+	 * Run the maintenance methods for all registered applications
+	 */
 	protected function run_maintenance() {
 		//get the registered apps
 		$apps = $this->settings->get('maintenance', 'application', []);
@@ -286,7 +286,7 @@ class maintenance_service extends service {
 				$app::filesystem_maintenance($this->settings);
 			}
 		}
-		//write only once to database maintenance logs and flush the array
+		//write only once to the database maintenance logs and flush the array
 		self::log_flush();
 	}
 
