@@ -286,40 +286,38 @@ class maintenance_service extends service {
 				$app::filesystem_maintenance($this->settings);
 			}
 		}
-		//write only once to the database maintenance logs and flush the array
+		//flush any remaining logs to the database and syslog
 		self::log_flush();
 	}
 
 	/**
 	 * Write any pending transactions to the database
+	 *
+	 * This is commonly called at the end of a maintenance run to ensure that all logs are written to the database
+	 * and to syslog. This is done to improve performance by reducing the number of times the database is written
+	 * to during the maintenance run. This is similar to an atomic commit.
+	 *
+	 * @return void
 	 * @access public
 	 */
-	public static function log_flush() {
+	public static function log_flush(): void {
 		//ensure the log_flush is not used to hijack the log_write function
 		if (self::$logs !== null && count(self::$logs) > 0) {
+			//write the log queue to the database using an atomic commit to improve performance
+			$array = [];
+			$array['maintenance_logs'] = self::$logs;
+			self::$db->save($array, false);
+
+			//write each log entry to syslog
 			foreach (self::$logs as $log_entry) {
-				$sql = "insert into v_maintenance_logs ";
-				$sql .= "(maintenance_log_uuid, domain_uuid, maintenance_log_application, maintenance_log_epoch, maintenance_log_message, maintenance_log_status, insert_date) ";
-				$sql .= "values ";
-				$sql .= "(:maintenance_log_uuid, :domain_uuid, :maintenance_log_application, :maintenance_log_epoch, :maintenance_log_message, :maintenance_log_status, now())";
-
-				$parameters = [
-					'maintenance_log_uuid' => $log_entry['maintenance_log_uuid'],
-					'domain_uuid' => $log_entry['domain_uuid'],
-					'maintenance_log_application' => $log_entry['maintenance_log_application'],
-					'maintenance_log_epoch' => $log_entry['maintenance_log_epoch'],
-					'maintenance_log_message' => $log_entry['maintenance_log_message'],
-					'maintenance_log_status' => $log_entry['maintenance_log_status'],
-				];
-
-				self::$db->execute($sql, $parameters);
-
+				//create a single line message to write to syslog
 				$message = "domain=" . $log_entry['domain_uuid']
 					. ", application=" . $log_entry['maintenance_log_application']
 					. ", message=" . $log_entry['maintenance_log_message']
 					. ", status=" . $log_entry['maintenance_log_status'];
 				self::log($message);
 			}
+
 			//clear the log queue
 			self::$logs = [];
 		}
