@@ -24,6 +24,7 @@
  * Contributor(s):
  * Mark J Crane <markjcrane@fusionpbx.com>
  * Tim Fry <tim@fusionpbx.com>
+ * denisent dev team
  */
 
 //includes files
@@ -239,6 +240,109 @@ if (permission_exists('maintenance_log_delete') && $maintenance_logs) {
 
 echo $text['description-maintenance_logs']."\n";
 echo "<br /><br />\n";
+
+//group maintenance logs by application
+$maintenance_log_groups = [];
+foreach ($maintenance_logs as $row) {
+        $application = $row['maintenance_log_application'] ?? '';
+        if ($application == '') {
+                $application = 'unknown';
+        }
+        $maintenance_log_groups[$application][] = $row;
+}
+
+ksort($maintenance_log_groups);
+
+function maintenance_log_display_name($application) {
+        if ($application == 'xml_cdr') {
+                return 'CDR';
+        }
+        return ucwords(str_replace('_', ' ', $application));
+}
+
+echo "<style>
+.maintenance-status-card summary { cursor: pointer; list-style: none; }
+.maintenance-status-card summary::-webkit-details-marker { display: none; }
+.maintenance-status-header { display: flex; justify-content: space-between; align-items: center; gap: 20px; }
+.maintenance-status-title { font-weight: bold; font-size: 115%; }
+.maintenance-status-meta { font-weight: normal; opacity: 0.8; }
+.maintenance-status-pill { display: inline-block; padding: 3px 8px; border-radius: 12px; font-weight: bold; }
+.maintenance-status-ok { background: #e7f6e7; color: #1f6f1f; }
+.maintenance-status-error { background: #fde8e8; color: #9b1c1c; }
+.maintenance-status-grid { display: grid; grid-template-columns: repeat(4, minmax(120px, 1fr)); gap: 12px; margin-top: 12px; }
+.maintenance-status-metric { border: 1px solid #eee; padding: 8px 10px; border-radius: 4px; }
+.maintenance-status-label { opacity: 0.75; font-size: 90%; }
+.maintenance-status-value { font-weight: bold; margin-top: 3px; }
+</style>\n";
+
+echo "<div class='heading'><b>Maintenance Status</b></div>\n";
+
+foreach ($maintenance_log_groups as $application => $rows) {
+        $errors = 0;
+        foreach ($rows as $row) {
+                if (($row['maintenance_log_status'] ?? '') == 'error') {
+                        $errors++;
+                }
+        }
+
+        $latest = $rows[0] ?? [];
+        $latest_time = $latest['maintenance_log_epoch'] ?? '';
+        $latest_message = $latest['maintenance_log_message'] ?? '';
+        $latest_status = $latest['maintenance_log_status'] ?? '';
+
+        $status_label = $latest_status == 'error' ? 'Error' : 'Success';
+        $status_class = $latest_status == 'error' ? 'maintenance-status-error' : 'maintenance-status-ok';
+        $open = $latest_status == 'error' ? ' open' : '';
+
+        echo "<details class='card maintenance-status-card'".$open.">\n";
+        echo "  <summary>\n";
+        echo "    <div class='maintenance-status-header'>\n";
+        echo "      <div><span class='maintenance-status-title'>".escape(maintenance_log_display_name($application))."</span> ";
+        echo "      <span class='maintenance-status-meta'>(".number_format(count($rows))." log".(count($rows) == 1 ? "" : "s").($errors > 0 ? ", ".$errors." error".($errors == 1 ? "" : "s") : "").")</span></div>\n";
+        echo "      <div><span class='maintenance-status-pill ".$status_class."'>".$status_label."</span></div>\n";
+        echo "    </div>\n";
+
+        echo "    <div class='maintenance-status-grid'>\n";
+        echo "      <div class='maintenance-status-metric'><div class='maintenance-status-label'>Last Run</div><div class='maintenance-status-value'>".escape($latest_time)."</div></div>\n";
+        echo "      <div class='maintenance-status-metric'><div class='maintenance-status-label'>Status</div><div class='maintenance-status-value'>".escape($status_label)."</div></div>\n";
+        echo "      <div class='maintenance-status-metric'><div class='maintenance-status-label'>Entries</div><div class='maintenance-status-value'>".number_format(count($rows))."</div></div>\n";
+        echo "      <div class='maintenance-status-metric'><div class='maintenance-status-label'>Errors</div><div class='maintenance-status-value'>".number_format($errors)."</div></div>\n";
+        echo "    </div>\n";
+        echo "  </summary>\n";
+
+        echo "  <br />\n";
+        echo "  <table class='list'>\n";
+        echo "    <tr class='list-header'>\n";
+        if ($show == 'all' && permission_exists('maintenance_log_all')) {
+                echo "      <th>Domain</th>\n";
+        }
+        echo "      <th>Server Timestamp</th>\n";
+        echo "      <th>Status</th>\n";
+        echo "      <th>Message</th>\n";
+        echo "    </tr>\n";
+
+        foreach ($rows as $row) {
+                echo "    <tr class='list-row'>\n";
+                if ($show == 'all' && permission_exists('maintenance_log_all')) {
+                        echo "      <td>".escape($row['domain_name'])."</td>\n";
+                }
+                echo "      <td class='no-wrap'>".escape($row['maintenance_log_epoch'])."</td>\n";
+                echo "      <td>".escape($row['maintenance_log_status'])."</td>\n";
+                echo "      <td>".escape($row['maintenance_log_message'])."</td>\n";
+                echo "    </tr>\n";
+        }
+
+        echo "  </table>\n";
+        echo "</details>\n";
+        echo "<br />\n";
+}
+
+//show the footer and stop before the legacy raw table
+require_once "resources/footer.php";
+exit;
+
+echo "<div class='heading'><b>Raw Maintenance Log</b></div>\n";
+
 
 echo "<form id='form_list' method='post'>\n";
 echo "	<input type='hidden' id='action' name='action' value=''>\n";
