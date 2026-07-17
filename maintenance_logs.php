@@ -75,19 +75,19 @@ if (!empty($action) && count($maintenance_logs_js) > 0) {
 	switch ($action) {
 		case 'copy':
 			if (permission_exists('maintenance_log_add')) {
-				$obj = new maintenance_logs($database, $setting);
+				$obj = new maintenance_logs($database, $settings);
 				$obj->copy($maintenance_logs_js);
 			}
 			break;
 		case 'toggle':
 			if (permission_exists('maintenance_log_edit')) {
-				$obj = new maintenance_logs($database, $setting);
+				$obj = new maintenance_logs($database, $settings);
 				$obj->toggle($maintenance_logs_js);
 			}
 			break;
 		case 'delete':
 			if (permission_exists('maintenance_log_delete')) {
-				$obj = new maintenance_logs($database, $setting);
+				$obj = new maintenance_logs($database, $settings);
 				$obj->delete($maintenance_logs_js);
 			}
 			break;
@@ -133,7 +133,9 @@ if (isset($search)) {
 //$parameters['time_zone'] = $time_zone;
 $sql .= " GROUP BY m.maintenance_log_epoch";
 $sql .= order_by($order_by, $order, 'maintenance_log_epoch', 'desc');
-$sql .= limit_offset($rows_per_page, $offset);
+
+// Rows per page and offset are not yet defined
+//$sql .= limit_offset($rows_per_page, $offset);
 
 
 if (count($parameters) > 0) {
