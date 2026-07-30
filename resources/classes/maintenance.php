@@ -50,23 +50,25 @@ class maintenance {
 
 	/**
 	 * Returns an array of domain names with their domain UUID as the array key
-	 * @param database $database
-	 * @param bool $ignore_domain_enabled Omit the SQL where clause for domain_enabled
-	 * @param bool $domain_status When the <code>$ignore_domain_enabled</code> is false, set the status to true or false
+	 *
+	 * @param database  $database      The database object to use for query
+	 * @param bool|null $domain_status When the <code>$ignore_domain_enabled</code> is false,
+	 *                                 set the status to true or false. When the value is set
+	 *                                 to <code>null</code>, the domain_enabled column is
+	 *                                 ignored.
+	 *
 	 * @return array
 	 */
-	public static function get_domains(database $database, bool $ignore_domain_enabled = false, bool $domain_status = true): array {
+	public static function get_domains(database $database, ?bool $domain_status = true): array {
 		$domains = [];
 		$status_string = $domain_status ? 'true' : 'false';
 		$sql = "select domain_uuid, domain_name from v_domains";
-		if (!$ignore_domain_enabled) {
+		if ($domain_status !== null) {
 			$sql .= " where domain_enabled='$status_string'";
 		}
 		$result = $database->select($sql);
 		if (!empty($result)) {
-			foreach ($result as $row) {
-				$domains[$row['domain_uuid']] = $row['domain_name'];
-			}
+			$domains = array_column($result, 'domain_name', 'domain_uuid');
 		}
 		return $domains;
 	}
@@ -77,7 +79,10 @@ class maintenance {
 	 * filesystem_maintenance</code>. When found, they are added to the <code>default_settings</code> category of
 	 * <b>maintenance</b> and put in to subcategory array <b>application</b> in default settings table.
 	 * This function is intended to be called by the upgrade method.
-	 * @param database $database
+	 *
+	 * @param database $database Database object
+	 *
+	 * @return void
 	 */
 	public static function app_defaults(database $database) {
 		//get the maintenance apps
@@ -625,11 +630,23 @@ class maintenance {
 
 	/**
 	 * Finds all UUIDs of a maintenance setting searching in the default settings, domain settings, and user settings tables.
+	 *
 	 * @param database $database Already connected database object
 	 * @param string $category Main category
 	 * @param string $subcategory Subcategory or name of the setting
 	 * @param bool $status Used for internal use but could be used to find a setting that is currently disabled
-	 * @return array Two-dimensional array of matching database records
+	 *
+	 * @return array Two-dimensional array of matching database records with a zero based index. Each record contains the following keys:
+	 *               <ul>
+	 *                <li>uuid: Primary UUID that would be chosen by the settings object
+	 *                <li>table: The table where the setting was found (default, domain, user)
+	 *                <li>category: The category of the setting
+	 *                <li>subcategory: The subcategory of the setting
+	 *                <li>status: The status of the setting (true or false)
+	 *                <li>value: The value of the setting
+	 *                <li>domain_uuid: The UUID of the domain associated with the setting, or null if not applicable
+	 *               </ul>
+	 *
 	 * @access public
 	 */
 	public static function find_all_uuids(database $database, string $category, string $subcategory, bool $status = true): array {
