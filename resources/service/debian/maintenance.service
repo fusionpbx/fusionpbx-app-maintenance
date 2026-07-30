@@ -17,6 +17,7 @@ StartLimitIntervalSec=0
 [Service]
 WorkingDirectory=/var/www/fusionpbx
 ExecStart=/usr/bin/php /var/www/fusionpbx/app/maintenance/resources/service/maintenance.php
+ExecReload=/bin/kill -SIGUSR1 $MAINPID
 RuntimeDirectory=fusionpbx
 RuntimeDirectoryMode=0755
 RuntimeDirectoryPreserve=yes

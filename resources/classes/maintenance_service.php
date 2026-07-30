@@ -156,6 +156,7 @@ class maintenance_service extends service {
 	 * @access protected
 	 */
 	public function reload_settings(): void {
+		static $re = '';
 		//reload the config file
 		self::$config->read();
 
@@ -178,6 +179,10 @@ class maintenance_service extends service {
 		$this->check_interval = intval($this->settings->get('maintenance', 'check_interval', 33));
 
 		self::log("Settings Reloaded", LOG_INFO);
+		$this->notice("Settings {$re}loaded");
+		if ($re === '') {
+			$re = 're';
+		}
 	}
 
 	/**
