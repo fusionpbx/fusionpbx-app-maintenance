@@ -114,9 +114,9 @@ class maintenance_service extends service {
 
 	/**
 	 * Can extend the base cli options
+	 *
 	 * @access protected
 	 */
-	#[\Override]
 	protected static function set_command_options() {
 		//add a new command line option
 		self::append_command_option(command_option::new()
@@ -129,16 +129,17 @@ class maintenance_service extends service {
 
 	/**
 	 * Show the version on the console when the -r or --version is used
+	 *
 	 * @return void
 	 * @access protected
 	 */
-	#[\Override]
 	protected static function display_version(): void {
 		echo "Version " . self::VERSION . "\n";
 	}
 
 	/**
 	 * This is called during the service creation if the -i or --immediate option is passed
+	 *
 	 * @access protected
 	 */
 	protected static function set_immediate() {
@@ -150,10 +151,10 @@ class maintenance_service extends service {
 	 * when the cli option -r or --reload is given to the service.
 	 * This is also called when the maintainer_service is first created to connect to the database
 	 * and reload the settings from the global default settings
+	 *
 	 * @return void
 	 * @access protected
 	 */
-	#[\Override]
 	public function reload_settings(): void {
 		//reload the config file
 		self::$config->read();
@@ -181,10 +182,10 @@ class maintenance_service extends service {
 
 	/**
 	 * Non-zero values indicate that the service failed to start
-	 * @return void
+	 *
+	 * @return int 0 indicates success, non-zero indicates failure
 	 * @access public
 	 */
-	#[\Override]
 	public function run(): int {
 
 		//log the startup
@@ -243,9 +244,11 @@ class maintenance_service extends service {
 
 	/**
 	 * Executes the maintenance for both database and filesystem objects using their respective helper methods
-	 * @param database $database
-	 * @param settings $settings
-	 * @param string $app
+	 *
+	 * @param database $database Database object to use for the maintenance
+	 * @param settings $settings Settings object to use for the maintenance
+	 * @param string   $app      The class name of the application to run maintenance on
+	 *
 	 * @return bool
 	 * @access protected
 	 */
@@ -272,6 +275,9 @@ class maintenance_service extends service {
 
 	/**
 	 * Run the maintenance methods for all registered applications
+	 *
+	 * @return void
+	 * @access protected
 	 */
 	protected function run_maintenance() {
 		//get the registered apps
@@ -315,7 +321,7 @@ class maintenance_service extends service {
 					. ", application=" . $log_entry['maintenance_log_application']
 					. ", message=" . $log_entry['maintenance_log_message']
 					. ", status=" . $log_entry['maintenance_log_status'];
-				self::log($message);
+				self::log(LOG_INFO, $message);
 			}
 
 			//clear the log queue
@@ -326,10 +332,13 @@ class maintenance_service extends service {
 	/**
 	 * Saves the logs in an array in order to write them all at once. This is to remove the number of times the database will try to
 	 * be written to during the many worker processes to improve performance similar to an atomic commit.
-	 * @param database_maintenance|filesystem_maintenance|string $worker_or_classname
-	 * @param string $message Message to put in the log
-	 * @param string|null $domain_uuid UUID of the domain that applies or null (default)
-	 * @param string $status LOG_OK (default) or LOG_ERROR
+	 *
+	 * @param database_maintenance|filesystem_maintenance|string $worker_or_classname The worker object or class name that is writing the log
+	 * @param string                                             $message             Message to put in the log
+	 * @param string|null                                        $domain_uuid         UUID of the domain that applies or null (default)
+	 * @param string                                             $status              LOG_OK (default) or LOG_ERROR
+	 *
+	 * @return void
 	 * @access public
 	 */
 	public static function log_write($worker_or_classname, string $message, ?string $domain_uuid = null, string $status = self::LOG_OK) {
@@ -354,9 +363,11 @@ class maintenance_service extends service {
 
 	/**
 	 * Returns a list of domains with the domain_uuid as the key and the domain_name as the value
-	 * @param database $database
-	 * @param bool $ignore_domain_enabled Omit the where clause for domain_enabled
-	 * @param bool $domain_status When the <code>$ignore_domain_enabled</code> is false, set the status to true or false
+	 *
+	 * @param database $database              Database object to use for the maintenance
+	 * @param bool     $ignore_domain_enabled Omit the where clause for domain_enabled
+	 * @param bool     $domain_status         When the <code>$ignore_domain_enabled</code> is false, set the status to true or false
+	 *
 	 * @return array Domain uuid as key and domain name as value
 	 * @access public
 	 */
@@ -378,10 +389,12 @@ class maintenance_service extends service {
 
 	/**
 	 * Returns the number of seconds passed since the file was modified
+	 *
 	 * @param string $file Full path and file name
-	 * @return int number of seconds since the file was modified
-	 * @depends filemtime
+	 *
+	 * @return int Number of seconds since the file was modified
 	 * @access public
+	 * @see https://www.php.net/manual/en/function.filemtime.php
 	 */
 	public static function seconds_since_modified(string $file): int {
 		//check the file date and time
@@ -390,10 +403,12 @@ class maintenance_service extends service {
 
 	/**
 	 * Returns the number of seconds passed since the file was created
+	 *
 	 * @param string $file Full path and file name
+	 *
 	 * @return int number of seconds since the file was created
-	 * @depends filectime
 	 * @access public
+	 * @see https://www.php.net/manual/en/function.filectime.php
 	 */
 	public static function seconds_since_created(string $file): int {
 		//check the file date and time
@@ -402,10 +417,12 @@ class maintenance_service extends service {
 
 	/**
 	 * Returns the number of minutes passed since the file was created
+	 *
 	 * @param string $file Full path and file name
+	 *
 	 * @return int number of minutes since the file was created
-	 * @depends seconds_since_created
 	 * @access public
+	 * @see maintenance_service::seconds_since_created()
 	 */
 	public static function minutes_since_created(string $file): int {
 		return floor(self::seconds_since_created($file) / 60);
@@ -413,10 +430,12 @@ class maintenance_service extends service {
 
 	/**
 	 * Returns the number of minutes passed since the file was modified
+	 *
 	 * @param string $file Full path and file name
+	 *
 	 * @return int number of minutes since the file was modified
-	 * @depends seconds_since_modified
 	 * @access public
+	 * @see maintenance_service::seconds_since_modified()
 	 */
 	public static function minutes_since_modified(string $file): int {
 		return floor(self::seconds_since_modified($file) / 60);
@@ -424,10 +443,12 @@ class maintenance_service extends service {
 
 	/**
 	 * Returns the number of hours passed since the file was created
+	 *
 	 * @param string $file Full path and file name
+	 *
 	 * @return int number of hours since the file was created
-	 * @depends minutes_since_create
 	 * @access public
+	 * @see maintenance_service::minutes_since_created()
 	 */
 	public static function hours_since_created(string $file): int {
 		return floor(self::minutes_since_created($file) / 60);
@@ -435,10 +456,12 @@ class maintenance_service extends service {
 
 	/**
 	 * Returns the number of hours passed since the file was modified
+	 *
 	 * @param string $file Full path and file name
+	 *
 	 * @return int number of hours since the file was modified
-	 * @depends minutes_since_create
 	 * @access public
+	 * @see maintenance_service::minutes_since_modified()
 	 */
 	public static function hours_since_modified(string $file): int {
 		return floor(self::minutes_since_modified($file) / 60);
@@ -446,10 +469,12 @@ class maintenance_service extends service {
 
 	/**
 	 * Returns the number of days passed since the file was created
+	 *
 	 * @param string $file Full path and file name
+	 *
 	 * @return int number of days since the file was created
-	 * @depends hours_since_created
 	 * @access public
+	 * @see maintenance_service::hours_since_created()
 	 */
 	public static function days_since_created(string $file): int {
 		return floor(self::hours_since_created($file) / 24);
@@ -457,10 +482,12 @@ class maintenance_service extends service {
 
 	/**
 	 * Returns the number of days passed since the file was modified
+	 *
 	 * @param string $file Full path and file name
+	 *
 	 * @return int number of days since the file was modified
-	 * @depends hours_since_modified
 	 * @access public
+	 * @see maintenance_service::hours_since_modified()
 	 */
 	public static function days_since_modified(string $file): int {
 		return floor(self::hours_since_modified($file) / 24);
@@ -468,10 +495,12 @@ class maintenance_service extends service {
 
 	/**
 	 * Returns the number of months passed since the file was created. Based on a month having 30 days.
+	 *
 	 * @param string $file Full path and file name
+	 *
 	 * @return int number of months since the file was created
-	 * @depends days_since_created
 	 * @access public
+	 * @see maintenance_service::days_since_created()
 	 */
 	public static function months_since_created(string $file): int {
 		return floor(self::days_since_created($file) / 30);
@@ -479,10 +508,12 @@ class maintenance_service extends service {
 
 	/**
 	 * Returns the number of months passed since the file was modified. Based on a month having 30 days.
+	 *
 	 * @param string $file Full path and file name
+	 *
 	 * @return int number of months since the file was modified
-	 * @depends days_since_modified
 	 * @access public
+	 * @see maintenance_service::days_since_modified()
 	 */
 	public static function months_since_modified(string $file): int {
 		return floor(self::days_since_modified($file) / 30);
@@ -490,10 +521,12 @@ class maintenance_service extends service {
 
 	/**
 	 * Returns the number of weeks passed since the file was created
+	 *
 	 * @param string $file Full path and file name
+	 *
 	 * @return int number of weeks since the file was created
-	 * @depends days_since_created
 	 * @access public
+	 * @see maintenance_service::days_since_created()
 	 */
 	public static function weeks_since_created(string $file): int {
 		return floor(self::days_since_created($file) / 7);
@@ -501,10 +534,12 @@ class maintenance_service extends service {
 
 	/**
 	 * Returns the number of weeks passed since the file was modified
+	 *
 	 * @param string $file Full path and file name
+	 *
 	 * @return int number of weeks since the file was modified
-	 * @depends days_since_modified
 	 * @access public
+	 * @see maintenance_service::days_since_modified()
 	 */
 	public static function weeks_since_modified(string $file): int {
 		return floor(self::days_since_modified($file) / 7);
@@ -512,10 +547,12 @@ class maintenance_service extends service {
 
 	/**
 	 * Returns the number of years passed since the file was created
+	 *
 	 * @param string $file Full path and file name
+	 *
 	 * @return int number of years since the file was created
-	 * @depends weeks_since_created
 	 * @access public
+	 * @see maintenance_service::weeks_since_created()
 	 */
 	public static function years_since_created(string $file): int {
 		return floor(self::weeks_since_created($file) / 52);
@@ -523,10 +560,12 @@ class maintenance_service extends service {
 
 	/**
 	 * Returns the number of years passed since the file was modified
+	 *
 	 * @param string $file Full path and file name
+	 *
 	 * @return int number of years since the file was modified
-	 * @depends weeks_since_modified
 	 * @access public
+	 * @see maintenance_service::weeks_since_modified()
 	 */
 	public static function years_since_modified(string $file): int {
 		return floor(self::weeks_since_modified($file) / 52);
