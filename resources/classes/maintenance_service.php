@@ -326,7 +326,7 @@ class maintenance_service extends service {
 					. ", application=" . $log_entry['maintenance_log_application']
 					. ", message=" . $log_entry['maintenance_log_message']
 					. ", status=" . $log_entry['maintenance_log_status'];
-				self::log(LOG_INFO, $message);
+				self::log($message, LOG_INFO);
 			}
 
 			//clear the log queue
