@@ -161,11 +161,11 @@ class maintenance_service extends service {
 		//re-read the config file to get changes in the configuration file
 		self::$config->read();
 
-		//re-connect the database just-in-case the config settings have changed
-		$this->database->connect();
-
 		//create a new database connection using the updated configuration
 		$this->database = new database(['config' => static::$config]);
+
+		//re-connect the database just-in-case the config settings have changed
+		$this->database->connect();
 
 		//reload the settings and set the settings to use the connected database
 		$this->settings = new settings(['database' => $this->database]);
