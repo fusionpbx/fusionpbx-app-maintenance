@@ -52,20 +52,13 @@ class maintenance {
 	 * Returns an array of domain names with their domain UUID as the array key
 	 *
 	 * @param database  $database      The database object to use for query
-	 * @param bool|null $domain_status When the <code>$ignore_domain_enabled</code> is false,
-	 *                                 set the status to true or false. When the value is set
-	 *                                 to <code>null</code>, the domain_enabled column is
-	 *                                 ignored.
 	 *
 	 * @return array
 	 */
-	public static function get_domains(database $database, ?bool $domain_status = true): array {
+	public static function get_domains(database $database): array {
 		$domains = [];
 		$status_string = $domain_status ? 'true' : 'false';
 		$sql = "select domain_uuid, domain_name from v_domains";
-		if ($domain_status !== null) {
-			$sql .= " where domain_enabled='$status_string'";
-		}
 		$result = $database->select($sql);
 		if (!empty($result)) {
 			$domains = array_column($result, 'domain_name', 'domain_uuid');

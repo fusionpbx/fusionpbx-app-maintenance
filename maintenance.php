@@ -543,7 +543,7 @@ if (!$show_all) {
 //search form
 echo "		<form id='form_search' class='inline' method='get'>";
 if (!empty($page)) {
-	echo "		<input name='page' type=hidden value='$page'>";
+	echo "		<input name='page' type=hidden value='".escape($page)."'>";
 }
 if ($show_all) {
 	echo "		<input name='show' type=hidden value='all'>";

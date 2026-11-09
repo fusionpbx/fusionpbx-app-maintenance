@@ -103,7 +103,7 @@ Options:
 public static function filesystem_maintenance(settings $settings): void {
 	$database = $settings->database();
 	$voicemail_location = $settings->get('switch', 'voicemail', '/var/lib/freeswitch/storage/voicemail') . '/default';
-	$domains = maintenance_service::get_domains($database, true);
+	$domains = maintenance_service::get_domains($database);
 	foreach ($domains as $domain_uuid => $domain_name) {
 		$domain_settings = new settings(['database' => $database, 'domain_uuid' => $domain_uuid]);
 		$quota_bytes = $domain_settings(self::class, 'filesystem_quota_bytes');

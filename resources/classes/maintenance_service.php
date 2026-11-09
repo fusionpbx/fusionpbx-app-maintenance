@@ -377,19 +377,13 @@ class maintenance_service extends service {
 	 * Returns a list of domains with the domain_uuid as the key and the domain_name as the value
 	 *
 	 * @param database $database              Database object to use for the maintenance
-	 * @param bool     $ignore_domain_enabled Omit the where clause for domain_enabled
-	 * @param bool     $domain_status         When the <code>$ignore_domain_enabled</code> is false, set the status to true or false
 	 *
 	 * @return array Domain uuid as key and domain name as value
 	 * @access public
 	 */
-	public static function get_domains(database $database, bool $ignore_domain_enabled = false, bool $domain_status = true): array {
+	public static function get_domains(database $database): array {
 		$domains = [];
-		$status_string = $domain_status ? 'true' : 'false';
 		$sql = "select domain_uuid, domain_name from v_domains";
-		if (!$ignore_domain_enabled) {
-			$sql .= " where domain_enabled='$status_string'";
-		}
 		$result = $database->select($sql);
 		if (!empty($result)) {
 			foreach ($result as $row) {

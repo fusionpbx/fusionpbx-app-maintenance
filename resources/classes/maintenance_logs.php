@@ -59,7 +59,7 @@ class maintenance_logs implements database_maintenance {
 		//get the database used
 		$database = $settings->database();
 		//get a list of all domains ignoring the domain_enabled field
-		$domains = maintenance_service::get_domains($database, true);
+		$domains = maintenance_service::get_domains($database);
 		//run the maintenance per domain
 		foreach ($domains as $domain_uuid => $domain_name) {
 			//get the settings for this domain
