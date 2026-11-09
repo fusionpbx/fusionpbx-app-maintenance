@@ -167,6 +167,9 @@ class maintenance_service extends service {
 		//re-connect the database just-in-case the config settings have changed
 		$this->database->connect();
 
+		//keep the static database reference used by log_flush() in sync with the new connection
+		self::$db = $this->database;
+
 		//reload the settings and set the settings to use the connected database
 		$this->settings = new settings(['database' => $this->database]);
 
@@ -207,13 +210,10 @@ class maintenance_service extends service {
 		//load functions
 		require_once dirname(__DIR__, 4) . '/resources/functions.php';
 
-		//save the database for logging but object and static properties can't the same name
-		self::$db = $this->database;
-
 		//initialize the logs for the workers
 		self::$logs = [];
 
-		//reload the default settings
+		//reload the default settings (also connects the database and sets the static reference used by log_flush())
 		$this->reload_settings();
 
 		//check for starting service exactly on the time needed
@@ -317,9 +317,14 @@ class maintenance_service extends service {
 		//ensure the log_flush is not used to hijack the log_write function
 		if (self::$logs !== null && count(self::$logs) > 0) {
 			//write the log queue to the database using an atomic commit to improve performance
-			$array = [];
-			$array['maintenance_logs'] = self::$logs;
-			self::$db->save($array, false);
+			//guard against a missing database connection so a logging failure can never take down the service
+			if (self::$db instanceof database) {
+				$array = [];
+				$array['maintenance_logs'] = self::$logs;
+				self::$db->save($array, false);
+			} else {
+				self::log("Unable to write the maintenance logs, the database connection is not available", LOG_ERR);
+			}
 
 			//write each log entry to syslog
 			foreach (self::$logs as $log_entry) {
