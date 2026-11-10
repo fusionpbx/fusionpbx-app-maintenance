@@ -83,13 +83,14 @@ function maintenance_setting_edit_url(?string $table, ?string $uuid): string {
 /**
  * Generate an HTML link for a maintenance setting value that allows inline editing.
  *
- * @param string      $value The current value of the setting.
+ * @param mixed       $value The current value of the setting.
  * @param string|null $table The table name ('default', 'domain', or 'user').
  * @param string|null $uuid  The UUID of the setting.
  *
  * @return string The HTML link for the maintenance setting value, or the escaped value if invalid.
  */
-function maintenance_setting_value_link(string $value, ?string $table, ?string $uuid): string {
+function maintenance_setting_value_link(mixed $value, ?string $table, ?string $uuid): string {
+	$value = (string)($value ?? '');
 	if (empty($table) || empty($uuid)) {
 			return escape($value);
 	}
@@ -191,14 +192,22 @@ function maintenance_log_application(database $database, string $application): s
 /**
  * Get the last run date and time for a maintenance application, optionally filtered by domain UUID.
  *
+ * @param settings $settings         The settings object containing maintenance configuration.
  * @param database $database    The database object.
  * @param string   $application The application name to look for.
  * @param string   $domain_uuid Optional domain UUID to filter by.
+ * @param string   $time_zone   Optional time zone to display the run time in.
  *
- * @return string The last run date and time in 'Y-m-d H:i' format, or an empty string if not found.
+ * @return string The last run date and time in 24h or 12h format, or an empty string if not found.
  */
-function maintenance_last_run(database $database, string $application, string $domain_uuid = '') {
+function maintenance_last_run(settings $settings, database $database, string $application, string $domain_uuid = '', string $time_zone = '') {
 	$application = maintenance_log_application($database, $application);
+
+	//set the time zone
+	$time_zone = $settings->get('domain', 'time_zone', date_default_timezone_get());
+
+	//set the time format options: 12h, 24h
+	$time_format = $settings->get('domain', 'time_format');
 
 	$sql = "select max(insert_date) from v_maintenance_logs ";
 	$sql .= "where maintenance_log_application = :application ";
@@ -214,7 +223,8 @@ function maintenance_last_run(database $database, string $application, string $d
 	// Some maintenance tasks log globally with domain_uuid NULL.
 	// If no domain-specific run exists, fall back to the global application run.
 	if (empty($last_run) && !empty($domain_uuid) && is_uuid($domain_uuid)) {
-			$sql = "select max(insert_date) from v_maintenance_logs ";
+			$sql = "select max(insert_date)::timestamptz ";
+			$sql .= "from v_maintenance_logs ";
 			$sql .= "where maintenance_log_application = :application ";
 			$sql .= "and domain_uuid is null ";
 			$parameters = ['application' => $application];
@@ -222,37 +232,90 @@ function maintenance_last_run(database $database, string $application, string $d
 	}
 
 	if (empty($last_run)) {
-			return '';
+		return '';
 	}
 
-	$date = new DateTime($last_run);
-	$date->setTimezone(new DateTimeZone(date_default_timezone_get()));
-	return $date->format('Y-m-d H:i');
+	//the database returns the timestamp with the database server's UTC offset,
+	//create the DateTime from it so the instant is preserved regardless of time zone
+	try {
+		$date = new DateTime((string)$last_run);
+	}
+	catch (Exception $e) {
+		//unparseable timestamp, nothing to display
+		return '';
+	}
+
+	//display the run time in the domain's time zone
+	$zone = !empty($time_zone) ? new DateTimeZone($time_zone) : new DateTimeZone(date_default_timezone_get());
+	$date->setTimezone($zone);
+	//return $date->format('j M Y g:i a');
+
+	//format the date time according to the time format
+	if ($time_format == '24h') {
+		$last_run_format = $date->format('j M Y H:i');
+	}
+	else {
+		$last_run_format = $date->format('j M Y h:i a');
+	}
+	return $last_run_format;
 }
 
 /**
  * Calculate the next scheduled run time for maintenance based on settings.
  *
- * @param settings $settings The settings object containing maintenance configuration.
+ * The next run is calculated in the domain's time zone (the time zone used
+ * for display) as the next occurrence of the configured time of day after
+ * the current time.
  *
- * @return string The next scheduled run time in 'Y-m-d H:i' format, or an empty string if maintenance is disabled or time of day is not set.
+ * @param settings $settings         The settings object containing maintenance configuration.
+ *
+ * @return string The next scheduled run time in 'j M Y g:i a' format, or an empty string if maintenance is disabled or time of day is not set.
  */
 function maintenance_next_run(settings $settings) {
 	$enabled = $settings->get('maintenance', 'enabled', false);
 	$time_of_day = $settings->get('maintenance', 'time_of_day', '');
 
+	//set the time zone
+	$display_time_zone = $settings->get('domain', 'time_zone', date_default_timezone_get());
+
+	//set the time format options: 12h, 24h
+	$time_format = $settings->get('domain', 'time_format');
+
 	if (!$enabled || empty($time_of_day)) {
-			return '';
+		return '';
 	}
 
-	$now = new DateTime();
-	$next = new DateTime(date('Y-m-d').' '.$time_of_day);
+	//determine the zone used for display, fall back to the server's if invalid
+	try {
+		$zone = new DateTimeZone($display_time_zone);
+	}
+	catch (Exception $e) {
+		$zone = new DateTimeZone(date_default_timezone_get());
+	}
+
+	//calculate the next run in the domain's time zone as the next
+	//occurrence of the configured time of day after the current time
+	try {
+		$now = new DateTime('now', $zone);
+		$next = new DateTime($now->format('j M Y').' '.$time_of_day, $zone);
+	}
+	catch (Exception $e) {
+		//malformed time of day, nothing to display
+		return '';
+	}
 
 	if ($next <= $now) {
-			$next->modify('+1 day');
+		$next->modify('+1 day');
 	}
 
-	return $next->format('Y-m-d H:i');
+	//format the date time according to the time format
+	if ($time_format == '24h') {
+		$next_format = $next->format('j M Y H:i');
+	}
+	else {
+		$next_format = $next->format('j M Y h:i a');
+	}
+	return $next_format;
 }
 
 /**
@@ -431,11 +494,11 @@ if ($show_all) {
 					$uuid = $match['uuid'];
 					$status = $match['status'];
 					$table = $match['table'];
-					$domain_uuid = $match['domain_uuid'] ?? 'global';
-					$value = $match['value'];
-					$maintenance_apps[$category]["{$task}_maintenance"][$domain_uuid]["{$table}_setting_enabled"] = $match['status'];
-					$maintenance_apps[$category]["{$task}_maintenance"][$domain_uuid]["{$table}_setting_value"] = $value;
-					$maintenance_apps[$category]["{$task}_maintenance"][$domain_uuid]["{$table}_setting_uuid"] = $uuid;
+					$row_domain_uuid = !empty($match['domain_uuid']) ? $match['domain_uuid'] : 'global';
+					$value = (string)($match['value'] ?? '');
+					$maintenance_apps[$category]["{$task}_maintenance"][$row_domain_uuid]["{$table}_setting_enabled"] = $match['status'];
+					$maintenance_apps[$category]["{$task}_maintenance"][$row_domain_uuid]["{$table}_setting_value"] = $value;
+					$maintenance_apps[$category]["{$task}_maintenance"][$row_domain_uuid]["{$table}_setting_uuid"] = $uuid;
 				}
 			}
 		}
@@ -632,26 +695,30 @@ foreach ($maintenance_apps as $class => $app_settings) {
 	if ((isset($app_settings['database_maintenance']['global']) || isset($app_settings['filesystem_maintenance']['global'])) && $show_all) {
 		echo "<tr class='list-row' style=''>";
 		echo "	<td>$display_name</td>";
-		echo "	<td>".$text['label-global']."</td>";
+		echo "	<td>".($text['label-global'] ?? 'Global')."</td>";
 		if (isset($app_settings['database_maintenance']['global'])) {
-			$value = $app_settings['database_maintenance']['global']['default_setting_value'];
-			$uuid = $app_settings['database_maintenance']['global']['default_setting_uuid'] ?? '';
-			echo "<td>".maintenance_setting_enabled_inline(!empty($app_settings['database_maintenance']['global']['default_setting_enabled']), 'default', $uuid)."</td>";
-			echo "<td>".maintenance_setting_value_link($value, 'default', $uuid)."</td>";
+			$setting = $app_settings['database_maintenance']['global'];
+			$table = isset($setting['domain_setting_value']) ? 'domain' : (isset($setting['default_setting_value']) ? 'default' : (isset($setting['user_setting_value']) ? 'user' : ''));
+			$value = (string)($setting[$table.'_setting_value'] ?? '');
+			$uuid = $setting[$table.'_setting_uuid'] ?? '';
+			echo "<td>".maintenance_setting_enabled_inline(!empty($setting[$table.'_setting_enabled']), $table, $uuid)."</td>";
+			echo "<td>".maintenance_setting_value_link($value, $table, $uuid)."</td>";
 		} else {
 			echo "<td>&nbsp;</td>";
 			echo "<td>&nbsp;</td>";
 		}
 		if (isset($app_settings['filesystem_maintenance']['global'])) {
-			$value = $app_settings['filesystem_maintenance']['global']['default_setting_value'];
-			$uuid = $app_settings['filesystem_maintenance']['global']['default_setting_uuid'] ?? '';
-			echo "<td>".maintenance_setting_enabled_inline(!empty($app_settings['filesystem_maintenance']['global']['default_setting_enabled']), 'default', $uuid)."</td>";
-			echo "<td>".maintenance_setting_value_link($value, 'default', $uuid)."</td>";
+			$setting = $app_settings['filesystem_maintenance']['global'];
+			$table = isset($setting['domain_setting_value']) ? 'domain' : (isset($setting['default_setting_value']) ? 'default' : (isset($setting['user_setting_value']) ? 'user' : ''));
+			$value = (string)($setting[$table.'_setting_value'] ?? '');
+			$uuid = $setting[$table.'_setting_uuid'] ?? '';
+			echo "<td>".maintenance_setting_enabled_inline(!empty($setting[$table.'_setting_enabled']), $table, $uuid)."</td>";
+			echo "<td>".maintenance_setting_value_link($value, $table, $uuid)."</td>";
 		} else {
 			echo "<td>&nbsp;</td>";
 			echo "<td>&nbsp;</td>";
 		}
-            $last_run = maintenance_last_run($database, $class);
+            $last_run = maintenance_last_run($default_settings, $database, $class);
             $next_run = maintenance_next_run($default_settings);
             echo "<td class='no-wrap'>".escape($last_run)."</td>";
             echo "<td class='no-wrap'>".escape($next_run)."</td>";
@@ -685,7 +752,7 @@ foreach ($maintenance_apps as $class => $app_settings) {
 			echo "<tr class='list-row' style=''>";
 			echo "	<td>$display_name</td>";
 			if ($show_all) {
-				echo "<td>".$domain_names[$domain_uuid]."</td>";
+				echo "<td>".($domain_names[$domain_uuid] ?? '')."</td>";
 			}
 			if (isset($app_settings['database_maintenance'][$domain_uuid])) {
 				$setting = $app_settings['database_maintenance'][$domain_uuid];
@@ -709,7 +776,7 @@ foreach ($maintenance_apps as $class => $app_settings) {
 				echo "<td>&nbsp;</td>";
 				echo "<td>&nbsp;</td>";
 			}
-                $last_run = maintenance_last_run($database, $class, $domain_uuid);
+                $last_run = maintenance_last_run($default_settings, $database, $class, $domain_uuid);
                 $next_run = maintenance_next_run($default_settings);
                 $run_class = maintenance_log_application($database, $class);
                 echo "<td class='no-wrap'>".escape($last_run)."</td>";

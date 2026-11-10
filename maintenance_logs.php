@@ -100,6 +100,14 @@ if (!empty($action) && count($maintenance_logs_js) > 0) {
 //set the time zone
 $time_zone = $settings->get('domain', 'time_zone', date_default_timezone_get());
 
+//set the time format options: 12h, 24h
+if ($settings->get('domain', 'time_format') == '24h') {
+	$time_format = 'HH24:MI';
+}
+else {
+	$time_format = 'HH12:MI am';
+}
+
 //add the search string
 if (isset($_GET["search"]) && $_GET["search"] != '') {
 	$search =  strtolower($_GET["search"]);
@@ -107,31 +115,28 @@ if (isset($_GET["search"]) && $_GET["search"] != '') {
 
 //get the count
 $parameters = [];
-$sql = "SELECT"
-	. " count(m.maintenance_log_uuid)"
-	. " FROM"
-	. "  v_maintenance_logs m"
-	. " LEFT JOIN v_domains d ON d.domain_uuid = m.domain_uuid";
+$sql = "SELECT ";
+$sql .= " count(m.maintenance_log_uuid) ";
+$sql .= " FROM ";
+$sql .= "  v_maintenance_logs m ";
+$sql .= " LEFT JOIN v_domains d ON d.domain_uuid = m.domain_uuid ";
 if ($show == "all" && permission_exists('maintenance_log_all')) {
-	$sql .= " WHERE true";
+	$sql .= " WHERE true ";
 }
 else {
 	$sql .= " WHERE (m.domain_uuid = :domain_uuid OR m.domain_uuid IS NULL) ";
 	$parameters['domain_uuid'] = $domain_uuid;
 }
-
 if (isset($search)) {
 	$sql .= " and (";
-	$sql .= " lower(m.maintenance_log_application) like :search";
-	$sql .= " or lower(m.maintenance_log_message) like :search";
-	$sql .= " or lower(m.maintenance_log_status) like :search";
-	$sql .= " or lower(d.domain_name) like :search";
-	$sql .= ")";
+	$sql .= " lower(m.maintenance_log_application) like :search ";
+	$sql .= " or lower(m.maintenance_log_message) like :search ";
+	$sql .= " or lower(m.maintenance_log_status) like :search ";
+	$sql .= " or lower(d.domain_name) like :search ";
+	$sql .= ") ";
 	$parameters['search'] = '%'.$search.'%';
 }
-
-//$parameters['time_zone'] = $time_zone;
-$sql .= " GROUP BY m.maintenance_log_epoch";
+$sql .= "GROUP BY m.maintenance_log_epoch ";
 $sql .= order_by($order_by, $order, 'maintenance_log_epoch', 'desc');
 
 // Rows per page and offset are not yet defined
@@ -153,36 +158,37 @@ list($paging_controls_mini, $rows_per_page) = paging($num_rows, $param, $rows_pe
 $offset = $rows_per_page * $page;
 
 //get the list
-$sql = "SELECT"
-	. " m.maintenance_log_uuid"
-	. ", m.domain_uuid"
-	. ", d.domain_name"
-	. ", m.maintenance_log_application"
-	. ", to_timestamp(m.maintenance_log_epoch)::timestamptz AS maintenance_log_epoch"
-	. ", m.maintenance_log_message"
-	. ", m.maintenance_log_status"
-	. " FROM"
-	. "  v_maintenance_logs m"
-	. " LEFT JOIN v_domains d ON d.domain_uuid = m.domain_uuid";
+$sql = "SELECT ";
+$sql .= " m.maintenance_log_uuid, ";
+$sql .= " m.domain_uuid, ";
+$sql .= " d.domain_name, ";
+$sql .= " m.maintenance_log_application, ";
+$sql .= " to_timestamp(m.maintenance_log_epoch) AT TIME ZONE :time_zone AS maintenance_log_epoch, ";
+
+$sql .= " to_char(timezone(:time_zone, m.insert_date), 'DD Mon YYYY') as maintenance_log_date_formatted, \n";
+$sql .= " to_char(timezone(:time_zone, m.insert_date), '".$time_format."') as maintenance_log_time_formatted, \n";
+$sql .= " m.maintenance_log_message, ";
+$sql .= " m.maintenance_log_status ";
+$sql .= "FROM ";
+$sql .= " v_maintenance_logs m ";
+$sql .= "LEFT JOIN v_domains d ON d.domain_uuid = m.domain_uuid ";
 if ($show == "all" && permission_exists('maintenance_log_all')) {
-	$sql .= " WHERE true";
+	$sql .= "WHERE true ";
 }
 else {
-	$sql .= " WHERE (m.domain_uuid = :domain_uuid OR m.domain_uuid IS NULL) ";
+	$sql .= "WHERE (m.domain_uuid = :domain_uuid OR m.domain_uuid IS NULL) ";
 	$parameters['domain_uuid'] = $domain_uuid;
 }
-
 if (isset($search)) {
-	$sql .= " and (";
-	$sql .= " lower(m.maintenance_log_application) like :search";
-	$sql .= " or lower(m.maintenance_log_message) like :search";
-	$sql .= " or lower(m.maintenance_log_status) like :search";
-	$sql .= " or lower(d.domain_name) like :search";
-	$sql .= ")";
+	$sql .= "AND ( ";
+	$sql .= " lower(m.maintenance_log_application) LIKE :search ";
+	$sql .= " OR lower(m.maintenance_log_message) LIKE :search ";
+	$sql .= " OR lower(m.maintenance_log_status) LIKE :search ";
+	$sql .= " OR lower(d.domain_name) LIKE :search ";
+	$sql .= ") ";
 	$parameters['search'] = '%'.$search.'%';
 }
-
-//$parameters['time_zone'] = $time_zone;
+$parameters['time_zone'] = $time_zone;
 $sql .= order_by($order_by, $order, 'maintenance_log_epoch', 'desc');
 $sql .= limit_offset($rows_per_page, $offset);
 $maintenance_logs = $database->select($sql, $parameters, 'all');
@@ -288,7 +294,7 @@ foreach ($maintenance_log_groups as $application => $rows) {
         }
 
         $latest = $rows[0] ?? [];
-        $latest_time = $latest['maintenance_log_epoch'] ?? '';
+        $latest_time = $latest['maintenance_log_date_formatted'] . ' '. $latest['maintenance_log_time_formatted']  ?? '';
         $latest_message = $latest['maintenance_log_message'] ?? '';
         $latest_status = $latest['maintenance_log_status'] ?? '';
 
