@@ -223,7 +223,7 @@ function maintenance_last_run(settings $settings, database $database, string $ap
 	// Some maintenance tasks log globally with domain_uuid NULL.
 	// If no domain-specific run exists, fall back to the global application run.
 	if (empty($last_run) && !empty($domain_uuid) && is_uuid($domain_uuid)) {
-			$sql = "select max(insert_date)::timestamptz ";
+			$sql = "select max(insert_date) ";
 			$sql .= "from v_maintenance_logs ";
 			$sql .= "where maintenance_log_application = :application ";
 			$sql .= "and domain_uuid is null ";
@@ -563,6 +563,9 @@ $domain_names = maintenance::get_domains($database);
 $object = new token;
 $token = $object->create($_SERVER['PHP_SELF']);
 
+//create a token for the reload script (it validates against its own path)
+$token_reload = $object->create(dirname($_SERVER['PHP_SELF']) . '/maintenance_reload.php');
+
 //show the content
 require_once dirname(__DIR__, 2) . '/resources/header.php';
 
@@ -576,7 +579,7 @@ echo button::create([
 	'label'=>$text['button-reload'],
 	'icon'=>$settings->get('theme', 'button_icon_reload'),
 	'style'=>'margin-right: 15px;',
-	'link'=>'maintenance_reload.php'
+	'link'=>'maintenance_reload.php?'.$token_reload['name'].'='.$token_reload['hash']
 ]);
 echo button::create([
 	'type'=>'button',
